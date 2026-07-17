@@ -32,6 +32,10 @@ own specs once this slice is validated.
 - A theming system beyond a small set of basic options (colors, size,
   title).
 - Any Phoenix/LiveView integration code or dependency.
+- Multi-series line charts. `Plotto.LineChart` renders a single line in
+  this slice; a `:series`/grouping key on data items is future work.
+- Numeric or time-based X axes. Both chart types use a categorical X axis
+  driven by `:label` (see "SVG rendering" below).
 
 ## Architecture
 
@@ -109,8 +113,10 @@ Basic keyword options accepted by `new/2` / `new!/2`:
 
 - `:width`, `:height` — chart dimensions in pixels (defaults provided).
 - `:title` — optional chart title text.
-- `:colors` — list of colors to cycle through for bars/series (default
-  palette provided by `Plotto.Theme` if omitted).
+- `:colors` — list of colors. For `BarChart`, cycled one color per bar.
+  For `LineChart`, only the first color is used, as the stroke color of
+  the single line (see "Non-goals"). Default palette provided by
+  `Plotto.Theme` if omitted.
 
 ### Validation and error handling
 
@@ -130,13 +136,22 @@ Basic keyword options accepted by `new/2` / `new!/2`:
 
 - **BarChart**: categorical scale on X (one band per `label`), linear scale
   on Y (`0..max(value)`, with margin). Each bar is a `<rect>` with `fill`
-  from `Plotto.Theme`, plus the data item's `:attrs` if present.
-- **LineChart**: linear/time scale on X, linear scale on Y. The series is
-  drawn as a `<polyline>`; each data point additionally gets a `<circle>`
-  so per-point `:attrs` can be attached (a `<polyline>` cannot carry
-  per-point attributes).
+  from `Plotto.Theme`, plus the data item's `:attrs` if present. Negative
+  `:value` inputs are out of scope for this slice — bars below a baseline
+  are not supported; `new/2`/`new!/2` treat a negative `:value` as invalid
+  input.
+- **LineChart**: categorical scale on X (points evenly spaced by index/
+  `label`, like the bar chart but without banding), linear scale on Y. The
+  line is drawn as a `<polyline>`; each data point additionally gets a
+  `<circle>` so per-point `:attrs` can be attached (a `<polyline>` cannot
+  carry per-point attributes).
 - Shared elements: an axis `<g>` (tick lines + `<text>` labels), a title
   `<text>`, and a root `<svg>` with `viewBox`, `width`, `height`.
+- Text alignment (e.g. a centered `:title`) is expressed via the standard
+  SVG `text-anchor` attribute on `<text>` nodes. The PNG rasterizer honors
+  the same attribute by computing total glyph advance width up front (via
+  `Plotto.Font.TrueType` metrics) and offsetting the draw origin
+  accordingly, so SVG and PNG text alignment match.
 
 `Plotto.SVG.Serializer` walks the tree and produces the XML string,
 escaping attribute values and text content to avoid SVG/HTML injection
@@ -189,3 +204,4 @@ recomputed.
   permissively licensed and redistributable).
 - Default color palette values in `Plotto.Theme`.
 - Exact anti-aliasing technique/quality trade-off for the rasterizer.
+- Default `:width`/`:height` pixel values.
