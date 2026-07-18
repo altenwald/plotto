@@ -31,6 +31,7 @@ defmodule Plotto.SVG.SerializerTest do
 
   test "escapes &, <, > and \" in attribute values" do
     element = Element.new("rect", %{"data-label" => ~s(a "b" & <c>)})
+
     assert Serializer.serialize(element) ==
              ~s(<rect data-label="a &quot;b&quot; &amp; &lt;c&gt;"/>)
   end
