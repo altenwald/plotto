@@ -34,4 +34,13 @@ defmodule PlottoTest do
     refute svg =~ "<script>"
     assert svg =~ "&lt;script&gt;"
   end
+
+  test "to_svg/1 returns {:error, reason} for a value that isn't a supported chart" do
+    assert {:error, reason} = Plotto.to_svg(%{not: "a chart"})
+    assert is_binary(reason)
+  end
+
+  test "to_svg!/1 raises ArgumentError for a value that isn't a supported chart" do
+    assert_raise ArgumentError, fn -> Plotto.to_svg!(%{not: "a chart"}) end
+  end
 end
