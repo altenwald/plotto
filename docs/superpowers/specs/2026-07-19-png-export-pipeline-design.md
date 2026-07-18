@@ -93,7 +93,15 @@ Plotto.Font.DejaVuSans       # compile-time-parsed embedded font data
 ## Font handling
 
 - **DejaVu Sans** (`.ttf`, Bitstream Vera-derived license, redistributable)
-  ships as `priv/fonts/DejaVuSans.ttf`.
+  ships as `fonts/DejaVuSans.ttf` at the project root — **not** under
+  `priv/`. `priv/` is for assets read at runtime by a compiled release;
+  since the font is parsed once at compile time and only the resulting
+  literal term is embedded in the `.beam` (see below), the raw `.ttf` is
+  a compile-time-only input, never read at runtime. It must still be
+  included in the Hex package tarball (so `mix deps.get` + compiling
+  Plotto as a dependency has access to it) via `mix.exs`'s
+  `package: [files: ...]` configuration, since Hex's default file
+  patterns don't include an arbitrary top-level `fonts/` directory.
 - `Plotto.Font.TrueType.parse!/1` is a normal, independently testable
   module: parses `head`/`maxp` (headers), `cmap` subtable format 4
   (Unicode BMP code point → glyph id), `glyf`/`loca` (per-glyph outlines:
@@ -208,9 +216,9 @@ both so PNG text layout matches the SVG's, per this spec's own Goals:
   header/table presence and the outline of a couple of known glyphs
   (e.g. `"A"`, `"0"`).
 - `Plotto.Font.DejaVuSans`: a smoke test that `font/0` returns parsed data
-  without touching the filesystem at runtime (e.g. assert calling it
-  doesn't require `priv/` to be present/readable at test time beyond
-  normal compiled-app assumptions).
+  purely from the compiled module (a literal term), with no filesystem
+  access at runtime/test time — the `fonts/DejaVuSans.ttf` file only
+  needs to exist at compile time.
 - `Plotto.PNG.Canvas`: pixel-level tests for `fill_rect`/`fill_circle`/
   `draw_line`/`put_pixel`, and for `downsample/1` (a known 4x4 block of
   colors produces the expected averaged pixel).
