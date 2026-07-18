@@ -35,6 +35,42 @@ defmodule PlottoTest do
     assert svg =~ "&lt;script&gt;"
   end
 
+  test "bar colors cycle through the palette end to end for 3+ items" do
+    colors = Plotto.Theme.default_colors()
+    data = for i <- 0..6, do: %{label: "Item#{i}", value: i + 1}
+    chart = BarChart.new!(data)
+    svg = Plotto.to_svg!(chart)
+
+    fills =
+      Regex.scan(~r/<rect fill="(#[0-9A-Fa-f]{6})"/, svg)
+      |> Enum.map(fn [_, fill] -> fill end)
+
+    expected = Enum.map(0..6, &Enum.at(colors, rem(&1, length(colors))))
+
+    assert fills == expected
+    # 7 items over a 5-color palette: item index 5 wraps back to item index 0's color.
+    assert Enum.at(fills, 5) == Enum.at(fills, 0)
+  end
+
+  test "custom :colors, :width, and :height thread through new!/2 into the rendered SVG" do
+    chart =
+      BarChart.new!(
+        [%{label: "Jan", value: 10}, %{label: "Feb", value: 25}],
+        width: 800,
+        height: 500,
+        colors: ["#111111", "#222222"]
+      )
+
+    svg = Plotto.to_svg!(chart)
+
+    assert svg =~ ~s(width="800")
+    assert svg =~ ~s(height="500")
+    assert svg =~ ~s(viewBox="0 0 800 500")
+    assert svg =~ "#111111"
+    assert svg =~ "#222222"
+    refute svg =~ "#4E79A7"
+  end
+
   test "to_svg/1 returns {:error, reason} for a value that isn't a supported chart" do
     assert {:error, reason} = Plotto.to_svg(%{not: "a chart"})
     assert is_binary(reason)
