@@ -15,6 +15,28 @@ svg = Plotto.to_svg!(chart)
 
 `Plotto.LineChart` works the same way. See `Plotto.BarChart` and `Plotto.LineChart` for the full data/options shape.
 
+## Example
+
+[examples/bar_chart.exs](examples/bar_chart.exs) generates the SVG below (`mix run examples/bar_chart.exs`):
+
+```elixir
+data = [
+  %{label: "Jan", value: 42},
+  %{label: "Feb", value: 58},
+  %{label: "Mar", value: 33},
+  %{label: "Apr", value: 71},
+  %{label: "May", value: 65},
+  %{label: "Jun", value: 90}
+]
+
+chart = Plotto.BarChart.new!(data, title: "Monthly Sales")
+svg = Plotto.to_svg!(chart)
+
+File.write!(Path.join(__DIR__, "bar_chart.svg"), svg)
+```
+
+![Bar chart example](examples/bar_chart.png)
+
 ## Installation
 
 The package can be installed by adding `plotto` to your list of dependencies in `mix.exs`:
