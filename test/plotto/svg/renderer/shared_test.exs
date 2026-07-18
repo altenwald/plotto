@@ -39,4 +39,23 @@ defmodule Plotto.SVG.Renderer.SharedTest do
     # 2 x-axis labels (Jan, Feb) + 6 y-axis tick labels (0, 2, 4, 6, 8, 10)
     assert length(texts) == 8
   end
+
+  test "axis_elements/5 renders whole-number tick labels without trailing decimals despite float imprecision" do
+    bands = Plotto.Axis.categorical_scale(["Jan"], 100)
+    margin = Plotto.Theme.margin()
+
+    # Axis.ticks(29.999999999999996) includes a last tick of 29.999999999999996,
+    # which is mathematically 30 but not == trunc(30) due to float division
+    # imprecision. format_tick/1 must round before comparing so this still
+    # renders as "30", not "30.00".
+    elements = Shared.axis_elements(bands, margin, 100, 100, 29.999999999999996)
+
+    tick_labels =
+      elements
+      |> Enum.filter(&(&1.tag == "text"))
+      |> Enum.map(fn %{children: [text]} -> text end)
+
+    assert "30" in tick_labels
+    refute "30.00" in tick_labels
+  end
 end

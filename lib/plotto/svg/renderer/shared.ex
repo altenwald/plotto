@@ -90,11 +90,15 @@ defmodule Plotto.SVG.Renderer.Shared do
     )
   end
 
+  defp format_tick(tick) when is_integer(tick), do: Integer.to_string(tick)
+
   defp format_tick(tick) do
-    if tick == trunc(tick) do
-      Integer.to_string(trunc(tick))
+    rounded = Float.round(tick, 6)
+
+    if rounded == trunc(rounded) do
+      Integer.to_string(trunc(rounded))
     else
-      :erlang.float_to_binary(tick / 1, decimals: 2)
+      :erlang.float_to_binary(rounded, decimals: 2)
     end
   end
 end
