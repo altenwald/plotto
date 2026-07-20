@@ -5,6 +5,22 @@ defmodule Plotto.Font.TrueType do
 
   defstruct [:units_per_em, :glyphs, :cmap, :missing_glyph_advance]
 
+  # glyf simple-glyph point flags
+  @on_curve_point 0x01
+  @x_short_vector 0x02
+  @y_short_vector 0x04
+  @repeat_flag 0x08
+  @x_is_same_or_positive 0x10
+  @y_is_same_or_positive 0x20
+
+  # glyf composite-glyph component flags
+  @arg_1_and_2_are_words 0x0001
+  @args_are_xy_values 0x0002
+  @we_have_a_scale 0x0008
+  @more_components 0x0020
+  @we_have_an_x_and_y_scale 0x0040
+  @we_have_a_two_by_two 0x0080
+
   def parse_tables(
         <<_version::32, num_tables::16, _search_range::16, _entry_selector::16, _range_shift::16,
           rest::binary>>
@@ -205,7 +221,9 @@ defmodule Plotto.Font.TrueType do
     maxp = parse_maxp(table_data(binary, tables, "maxp"))
 
     loca =
-      parse_loca(table_data(binary, tables, "loca"), head.index_to_loc_format, maxp.num_glyphs)
+      table_data(binary, tables, "loca")
+      |> parse_loca(head.index_to_loc_format, maxp.num_glyphs)
+      |> List.to_tuple()
 
     glyf_data = table_data(binary, tables, "glyf")
 
@@ -253,8 +271,8 @@ defmodule Plotto.Font.TrueType do
   end
 
   defp glyph_bytes(glyf_data, loca, glyph_id) do
-    start_offset = Enum.at(loca, glyph_id)
-    end_offset = Enum.at(loca, glyph_id + 1)
+    start_offset = elem(loca, glyph_id)
+    end_offset = elem(loca, glyph_id + 1)
 
     if end_offset > start_offset do
       binary_part(glyf_data, start_offset, end_offset - start_offset)
@@ -271,12 +289,12 @@ defmodule Plotto.Font.TrueType do
     <<instruction_length::16, rest::binary>> = rest
     <<_instructions::binary-size(instruction_length), rest::binary>> = rest
     {flags, rest} = parse_glyph_flags(rest, num_points, [])
-    {x_coords, rest} = parse_glyph_coords(rest, flags, 0x02, 0x10)
-    {y_coords, _rest} = parse_glyph_coords(rest, flags, 0x04, 0x20)
+    {x_coords, rest} = parse_glyph_coords(rest, flags, @x_short_vector, @x_is_same_or_positive)
+    {y_coords, _rest} = parse_glyph_coords(rest, flags, @y_short_vector, @y_is_same_or_positive)
 
     points =
       Enum.zip([x_coords, y_coords, flags])
-      |> Enum.map(fn {x, y, flag} -> %{x: x, y: y, on_curve: (flag &&& 0x01) == 1} end)
+      |> Enum.map(fn {x, y, flag} -> %{x: x, y: y, on_curve: (flag &&& @on_curve_point) == 1} end)
 
     split_into_contours(points, end_pts)
   end
@@ -285,7 +303,7 @@ defmodule Plotto.Font.TrueType do
     do: {Enum.reverse(acc), binary}
 
   defp parse_glyph_flags(<<flag::8, rest::binary>>, remaining, acc) do
-    if (flag &&& 0x08) != 0 do
+    if (flag &&& @repeat_flag) != 0 do
       <<repeat::8, rest::binary>> = rest
       flags = List.duplicate(flag, repeat + 1)
       parse_glyph_flags(rest, remaining - (repeat + 1), Enum.reverse(flags) ++ acc)
@@ -334,6 +352,8 @@ defmodule Plotto.Font.TrueType do
     {dx, dy, rest} = parse_component_args(rest, flags)
     {a, b, c, d, rest} = parse_component_transform(rest, flags)
 
+    # A composite glyph's component may itself be simple or composite —
+    # resolve it by recursing back into the top-level outline parser.
     component_outline =
       glyf_data
       |> parse_glyph_outline(loca, glyph_index)
@@ -341,7 +361,7 @@ defmodule Plotto.Font.TrueType do
 
     acc = acc ++ component_outline
 
-    if (flags &&& 0x0020) != 0 do
+    if (flags &&& @more_components) != 0 do
       parse_components(rest, glyf_data, loca, acc)
     else
       acc
@@ -349,8 +369,8 @@ defmodule Plotto.Font.TrueType do
   end
 
   defp parse_component_args(binary, flags) do
-    words? = (flags &&& 0x0001) != 0
-    xy_values? = (flags &&& 0x0002) != 0
+    words? = (flags &&& @arg_1_and_2_are_words) != 0
+    xy_values? = (flags &&& @args_are_xy_values) != 0
 
     case {words?, xy_values?} do
       {true, true} ->
@@ -373,16 +393,16 @@ defmodule Plotto.Font.TrueType do
 
   defp parse_component_transform(binary, flags) do
     cond do
-      (flags &&& 0x0008) != 0 ->
+      (flags &&& @we_have_a_scale) != 0 ->
         <<scale::16-signed, rest::binary>> = binary
         s = f2dot14(scale)
         {s, 0, 0, s, rest}
 
-      (flags &&& 0x0040) != 0 ->
+      (flags &&& @we_have_an_x_and_y_scale) != 0 ->
         <<x_scale::16-signed, y_scale::16-signed, rest::binary>> = binary
         {f2dot14(x_scale), 0, 0, f2dot14(y_scale), rest}
 
-      (flags &&& 0x0080) != 0 ->
+      (flags &&& @we_have_a_two_by_two) != 0 ->
         <<a::16-signed, b::16-signed, c::16-signed, d::16-signed, rest::binary>> = binary
         {f2dot14(a), f2dot14(b), f2dot14(c), f2dot14(d), rest}
 

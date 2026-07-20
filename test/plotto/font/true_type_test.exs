@@ -92,6 +92,7 @@ defmodule Plotto.Font.TrueTypeTest do
           head.index_to_loc_format,
           maxp.num_glyphs
         )
+        |> List.to_tuple()
 
       glyf_data = TrueType.table_data(@font_binary, tables, "glyf")
 
