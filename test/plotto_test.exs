@@ -79,4 +79,39 @@ defmodule PlottoTest do
   test "to_svg!/1 raises ArgumentError for a value that isn't a supported chart" do
     assert_raise ArgumentError, fn -> Plotto.to_svg!(%{not: "a chart"}) end
   end
+
+  describe "to_png/1 and to_png!/1" do
+    @png_signature <<137, 80, 78, 71, 13, 10, 26, 10>>
+
+    test "to_png/1 returns {:ok, png_binary} for a bar chart, at final (non-supersampled) dimensions" do
+      chart =
+        BarChart.new!([%{label: "Jan", value: 10}, %{label: "Feb", value: 25}],
+          width: 100,
+          height: 80
+        )
+
+      assert {:ok, png} = Plotto.to_png(chart)
+
+      assert binary_part(png, 0, 8) == @png_signature
+      <<@png_signature, _length::32, "IHDR", width::32, height::32, _rest::binary>> = png
+      assert width == 100
+      assert height == 80
+    end
+
+    test "to_png!/1 returns the png binary directly for a line chart" do
+      chart = LineChart.new!([%{label: "Jan", value: 10}, %{label: "Feb", value: 25}])
+      png = Plotto.to_png!(chart)
+
+      assert binary_part(png, 0, 8) == @png_signature
+    end
+
+    test "to_png/1 returns {:error, reason} for a value that isn't a supported chart" do
+      assert {:error, reason} = Plotto.to_png(%{not: "a chart"})
+      assert is_binary(reason)
+    end
+
+    test "to_png!/1 raises ArgumentError for a value that isn't a supported chart" do
+      assert_raise ArgumentError, fn -> Plotto.to_png!(%{not: "a chart"}) end
+    end
+  end
 end
