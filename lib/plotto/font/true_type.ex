@@ -1,6 +1,10 @@
 defmodule Plotto.Font.TrueType do
   @moduledoc false
 
+  import Bitwise
+
+  defstruct [:units_per_em, :glyphs, :cmap, :missing_glyph_advance]
+
   def parse_tables(
         <<_version::32, num_tables::16, _search_range::16, _entry_selector::16, _range_shift::16,
           rest::binary>>
@@ -192,5 +196,212 @@ defmodule Plotto.Font.TrueType do
       _ ->
         0
     end
+  end
+
+  def parse!(binary) do
+    tables = parse_tables(binary)
+    head = parse_head(table_data(binary, tables, "head"))
+    hhea = parse_hhea(table_data(binary, tables, "hhea"))
+    maxp = parse_maxp(table_data(binary, tables, "maxp"))
+
+    loca =
+      parse_loca(table_data(binary, tables, "loca"), head.index_to_loc_format, maxp.num_glyphs)
+
+    glyf_data = table_data(binary, tables, "glyf")
+
+    hmtx =
+      parse_hmtx(
+        table_data(binary, tables, "hmtx"),
+        hhea.num_of_long_hor_metrics,
+        maxp.num_glyphs
+      )
+
+    cmap = parse_cmap(table_data(binary, tables, "cmap"))
+
+    glyphs =
+      Map.new(0..(maxp.num_glyphs - 1), fn glyph_id ->
+        outline = parse_glyph_outline(glyf_data, loca, glyph_id)
+        advance_width = Map.get(hmtx, glyph_id, 0)
+        {glyph_id, %{outline: outline, advance_width: advance_width}}
+      end)
+
+    %__MODULE__{
+      units_per_em: head.units_per_em,
+      glyphs: glyphs,
+      cmap: cmap,
+      missing_glyph_advance: Map.get(hmtx, 0, 0)
+    }
+  end
+
+  def lookup_glyph(%__MODULE__{cmap: cmap, glyphs: glyphs}, codepoint) do
+    with glyph_id when not is_nil(glyph_id) <- Map.get(cmap, codepoint) do
+      Map.get(glyphs, glyph_id)
+    end
+  end
+
+  def parse_glyph_outline(glyf_data, loca, glyph_id) do
+    case glyph_bytes(glyf_data, loca, glyph_id) do
+      <<>> ->
+        []
+
+      <<num_contours::16-signed, _bbox::64, rest::binary>> when num_contours >= 0 ->
+        parse_simple_outline(num_contours, rest)
+
+      <<_num_contours::16-signed, _bbox::64, rest::binary>> ->
+        parse_composite_outline(rest, glyf_data, loca)
+    end
+  end
+
+  defp glyph_bytes(glyf_data, loca, glyph_id) do
+    start_offset = Enum.at(loca, glyph_id)
+    end_offset = Enum.at(loca, glyph_id + 1)
+
+    if end_offset > start_offset do
+      binary_part(glyf_data, start_offset, end_offset - start_offset)
+    else
+      <<>>
+    end
+  end
+
+  defp parse_simple_outline(0, _rest), do: []
+
+  defp parse_simple_outline(num_contours, rest) when num_contours > 0 do
+    {end_pts, rest} = take_uint16_list(rest, num_contours)
+    num_points = List.last(end_pts) + 1
+    <<instruction_length::16, rest::binary>> = rest
+    <<_instructions::binary-size(instruction_length), rest::binary>> = rest
+    {flags, rest} = parse_glyph_flags(rest, num_points, [])
+    {x_coords, rest} = parse_glyph_coords(rest, flags, 0x02, 0x10)
+    {y_coords, _rest} = parse_glyph_coords(rest, flags, 0x04, 0x20)
+
+    points =
+      Enum.zip([x_coords, y_coords, flags])
+      |> Enum.map(fn {x, y, flag} -> %{x: x, y: y, on_curve: (flag &&& 0x01) == 1} end)
+
+    split_into_contours(points, end_pts)
+  end
+
+  defp parse_glyph_flags(binary, remaining, acc) when remaining <= 0,
+    do: {Enum.reverse(acc), binary}
+
+  defp parse_glyph_flags(<<flag::8, rest::binary>>, remaining, acc) do
+    if (flag &&& 0x08) != 0 do
+      <<repeat::8, rest::binary>> = rest
+      flags = List.duplicate(flag, repeat + 1)
+      parse_glyph_flags(rest, remaining - (repeat + 1), Enum.reverse(flags) ++ acc)
+    else
+      parse_glyph_flags(rest, remaining - 1, [flag | acc])
+    end
+  end
+
+  defp parse_glyph_coords(binary, flags, short_flag, same_or_positive_flag) do
+    {deltas, rest} =
+      Enum.reduce(flags, {[], binary}, fn flag, {acc, bin} ->
+        cond do
+          (flag &&& short_flag) != 0 ->
+            <<value::8, rest::binary>> = bin
+            sign = if (flag &&& same_or_positive_flag) != 0, do: 1, else: -1
+            {[value * sign | acc], rest}
+
+          (flag &&& same_or_positive_flag) != 0 ->
+            {[0 | acc], bin}
+
+          true ->
+            <<value::16-signed, rest::binary>> = bin
+            {[value | acc], rest}
+        end
+      end)
+
+    coords = deltas |> Enum.reverse() |> Enum.scan(0, fn delta, acc -> acc + delta end)
+    {coords, rest}
+  end
+
+  defp split_into_contours(points, end_pts) do
+    {contours, _} =
+      Enum.reduce(end_pts, {[], 0}, fn end_pt, {acc, start_index} ->
+        contour = Enum.slice(points, start_index, end_pt - start_index + 1)
+        {[contour | acc], end_pt + 1}
+      end)
+
+    Enum.reverse(contours)
+  end
+
+  defp parse_composite_outline(binary, glyf_data, loca) do
+    parse_components(binary, glyf_data, loca, [])
+  end
+
+  defp parse_components(<<flags::16, glyph_index::16, rest::binary>>, glyf_data, loca, acc) do
+    {dx, dy, rest} = parse_component_args(rest, flags)
+    {a, b, c, d, rest} = parse_component_transform(rest, flags)
+
+    component_outline =
+      glyf_data
+      |> parse_glyph_outline(loca, glyph_index)
+      |> transform_contours(a, b, c, d, dx, dy)
+
+    acc = acc ++ component_outline
+
+    if (flags &&& 0x0020) != 0 do
+      parse_components(rest, glyf_data, loca, acc)
+    else
+      acc
+    end
+  end
+
+  defp parse_component_args(binary, flags) do
+    words? = (flags &&& 0x0001) != 0
+    xy_values? = (flags &&& 0x0002) != 0
+
+    case {words?, xy_values?} do
+      {true, true} ->
+        then_binary(binary, fn <<dx::16-signed, dy::16-signed, rest::binary>> ->
+          {dx, dy, rest}
+        end)
+
+      {false, true} ->
+        then_binary(binary, fn <<dx::8-signed, dy::8-signed, rest::binary>> -> {dx, dy, rest} end)
+
+      {true, false} ->
+        then_binary(binary, fn <<_p1::16, _p2::16, rest::binary>> -> {0, 0, rest} end)
+
+      {false, false} ->
+        then_binary(binary, fn <<_p1::8, _p2::8, rest::binary>> -> {0, 0, rest} end)
+    end
+  end
+
+  defp then_binary(binary, fun), do: fun.(binary)
+
+  defp parse_component_transform(binary, flags) do
+    cond do
+      (flags &&& 0x0008) != 0 ->
+        <<scale::16-signed, rest::binary>> = binary
+        s = f2dot14(scale)
+        {s, 0, 0, s, rest}
+
+      (flags &&& 0x0040) != 0 ->
+        <<x_scale::16-signed, y_scale::16-signed, rest::binary>> = binary
+        {f2dot14(x_scale), 0, 0, f2dot14(y_scale), rest}
+
+      (flags &&& 0x0080) != 0 ->
+        <<a::16-signed, b::16-signed, c::16-signed, d::16-signed, rest::binary>> = binary
+        {f2dot14(a), f2dot14(b), f2dot14(c), f2dot14(d), rest}
+
+      true ->
+        {1.0, 0.0, 0.0, 1.0, binary}
+    end
+  end
+
+  defp f2dot14(value), do: value / 16384
+
+  defp transform_contours(contours, a, b, c, d, dx, dy) do
+    Enum.map(contours, fn contour ->
+      Enum.map(contour, fn point ->
+        %{
+          x: round(a * point.x + c * point.y + dx),
+          y: round(b * point.x + d * point.y + dy),
+          on_curve: point.on_curve
+        }
+      end)
+    end)
   end
 end

@@ -79,4 +79,85 @@ defmodule Plotto.Font.TrueTypeTest do
       assert Map.has_key?(cmap, 0x00F1)
     end
   end
+
+  describe "glyph outline parsing" do
+    setup do
+      tables = TrueType.parse_tables(@font_binary)
+      head = TrueType.parse_head(TrueType.table_data(@font_binary, tables, "head"))
+      maxp = TrueType.parse_maxp(TrueType.table_data(@font_binary, tables, "maxp"))
+
+      loca =
+        TrueType.parse_loca(
+          TrueType.table_data(@font_binary, tables, "loca"),
+          head.index_to_loc_format,
+          maxp.num_glyphs
+        )
+
+      glyf_data = TrueType.table_data(@font_binary, tables, "glyf")
+
+      {:ok, glyf_data: glyf_data, loca: loca}
+    end
+
+    test "parse_glyph_outline/3 returns 2 contours for 'A' (glyph id 36, a simple glyph)", %{
+      glyf_data: glyf_data,
+      loca: loca
+    } do
+      outline = TrueType.parse_glyph_outline(glyf_data, loca, 36)
+      assert length(outline) == 2
+    end
+
+    test "parse_glyph_outline/3 returns 3 contours for 'é' (glyph id 171, a composite glyph)", %{
+      glyf_data: glyf_data,
+      loca: loca
+    } do
+      outline = TrueType.parse_glyph_outline(glyf_data, loca, 171)
+      assert length(outline) == 3
+    end
+
+    test "parse_glyph_outline/3 returns 2 contours for 'ñ' (glyph id 179, a composite glyph)", %{
+      glyf_data: glyf_data,
+      loca: loca
+    } do
+      outline = TrueType.parse_glyph_outline(glyf_data, loca, 179)
+      assert length(outline) == 2
+    end
+
+    test "parse_glyph_outline/3 returns [] for an empty glyph (e.g. space)", %{
+      glyf_data: glyf_data,
+      loca: loca
+    } do
+      space_glyph_id = 3
+      assert TrueType.parse_glyph_outline(glyf_data, loca, space_glyph_id) == []
+    end
+  end
+
+  describe "parse!/1" do
+    test "assembles a full TrueType struct from the embedded font" do
+      font = TrueType.parse!(@font_binary)
+
+      assert font.units_per_em == 2048
+      assert map_size(font.glyphs) == 6253
+      assert font.cmap[?A] == 36
+    end
+
+    test "lookup_glyph/2 finds 'A' by codepoint" do
+      font = TrueType.parse!(@font_binary)
+      glyph = TrueType.lookup_glyph(font, ?A)
+
+      assert length(glyph.outline) == 2
+      assert glyph.advance_width == 1401
+    end
+
+    test "lookup_glyph/2 finds 'é' (composite) by codepoint" do
+      font = TrueType.parse!(@font_binary)
+      glyph = TrueType.lookup_glyph(font, 0x00E9)
+
+      assert length(glyph.outline) == 3
+    end
+
+    test "lookup_glyph/2 returns nil for a codepoint not in the font" do
+      font = TrueType.parse!(@font_binary)
+      assert TrueType.lookup_glyph(font, 0x1F600) == nil
+    end
+  end
 end
