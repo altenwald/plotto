@@ -82,7 +82,7 @@ defmodule Plotto.Font.Glyph do
 
   defp midpoint(a, b), do: %{x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, on_curve: true}
 
-  defp expand_implied_points([_single]), do: []
+  defp expand_implied_points([single]), do: [single]
 
   defp expand_implied_points([p1, p2 | rest]) do
     if not p1.on_curve and not p2.on_curve do
@@ -93,7 +93,7 @@ defmodule Plotto.Font.Glyph do
   end
 
   defp build_segments([]), do: []
-  defp build_segments([single]), do: [single]
+  defp build_segments([_last]), do: []
 
   defp build_segments([p1, p2]) when p1.on_curve and p2.on_curve do
     [{p1.x, p1.y}, {p2.x, p2.y}]

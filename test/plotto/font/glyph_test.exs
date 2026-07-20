@@ -35,6 +35,25 @@ defmodule Plotto.Font.GlyphTest do
     assert black_pixel_count < 900
   end
 
+  test "draw/6 renders a curved glyph (e.g. 'e') without crashing" do
+    font = DejaVuSans.font()
+    glyph = TrueType.lookup_glyph(font, ?e)
+
+    scale = 20 / font.units_per_em
+    canvas = Canvas.new(30, 30)
+    color = Canvas.pack(0, 0, 0, 255)
+
+    result = Glyph.draw(canvas, glyph, 5, 25, scale, color)
+
+    black_pixel_count =
+      for x <- 0..29, y <- 0..29, Canvas.get_pixel(result, x, y) == color, reduce: 0 do
+        acc -> acc + 1
+      end
+
+    assert black_pixel_count > 10
+    assert black_pixel_count < 900
+  end
+
   test "draw/6 renders a glyph with a hole (e.g. 'A') with the hole NOT filled" do
     font = DejaVuSans.font()
     glyph = TrueType.lookup_glyph(font, ?A)
