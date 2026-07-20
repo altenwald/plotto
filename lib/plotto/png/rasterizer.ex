@@ -3,6 +3,7 @@ defmodule Plotto.PNG.Rasterizer do
 
   alias Plotto.SVG.Element
   alias Plotto.PNG.{Canvas, Color}
+  alias Plotto.Font.{DejaVuSans, Glyph, TrueType}
 
   @supersample 4
 
@@ -66,7 +67,40 @@ defmodule Plotto.PNG.Rasterizer do
     Canvas.draw_polyline(canvas, points, color, width)
   end
 
-  defp draw_element(canvas, %Element{tag: "text"}), do: canvas
+  defp draw_element(canvas, %Element{tag: "text", attrs: attrs, children: [text]}) do
+    font = DejaVuSans.font()
+    font_size = num(attrs["font-size"])
+    scale = font_size / font.units_per_em * @supersample
+    {:ok, color} = Color.parse(attrs["fill"])
+
+    glyphs =
+      text
+      |> String.to_charlist()
+      |> Enum.map(fn codepoint ->
+        TrueType.lookup_glyph(font, codepoint) ||
+          %{outline: [], advance_width: font.missing_glyph_advance}
+      end)
+
+    total_width = glyphs |> Enum.map(& &1.advance_width) |> Enum.sum() |> Kernel.*(scale)
+    anchored_x = num(attrs["x"]) * @supersample
+
+    start_x =
+      case attrs["text-anchor"] do
+        "middle" -> anchored_x - total_width / 2
+        "end" -> anchored_x - total_width
+        _ -> anchored_x
+      end
+
+    y = num(attrs["y"]) * @supersample
+
+    {canvas, _final_x} =
+      Enum.reduce(glyphs, {canvas, start_x}, fn glyph, {canvas, x} ->
+        canvas = Glyph.draw(canvas, glyph, x, y, scale, color)
+        {canvas, x + glyph.advance_width * scale}
+      end)
+
+    canvas
+  end
 
   defp num(str), do: elem(Float.parse(str), 0)
 end

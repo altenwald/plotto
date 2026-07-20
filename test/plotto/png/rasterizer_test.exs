@@ -57,4 +57,61 @@ defmodule Plotto.PNG.RasterizerTest do
 
     assert Canvas.get_pixel(canvas, 20, 20) == color
   end
+
+  describe "text rendering" do
+    test "a <text> with text-anchor=\"start\" paints pixels near its x,y" do
+      text =
+        Element.new(
+          "text",
+          %{x: 5, y: 20, "font-size": 12, "text-anchor": "start", fill: "#000000"},
+          ["A"]
+        )
+
+      tree = Element.new("svg", %{}, [text])
+
+      canvas = Rasterizer.rasterize(tree, 40, 40)
+      color = Canvas.pack(0, 0, 0, 255)
+
+      painted? =
+        for x <- 0..159, y <- 0..159, reduce: false do
+          acc -> acc or Canvas.get_pixel(canvas, x, y) == color
+        end
+
+      assert painted?
+    end
+
+    test "a <text> with an unsupported codepoint does not crash and still advances" do
+      # U+1F600 (an emoji) is not in DejaVu Sans's cmap; this should render the
+      # rest of the string without raising.
+      text =
+        Element.new("text", %{x: 5, y: 20, "font-size": 12, fill: "#000000"}, [
+          <<0x1F600::utf8>> <> "A"
+        ])
+
+      tree = Element.new("svg", %{}, [text])
+
+      assert %Plotto.PNG.Canvas{} = Rasterizer.rasterize(tree, 40, 40)
+    end
+
+    test "text-anchor=\"middle\" centers the text around x, differing from \"start\"" do
+      start_text =
+        Element.new(
+          "text",
+          %{x: 20, y: 20, "font-size": 12, "text-anchor": "start", fill: "#000000"},
+          ["AAAA"]
+        )
+
+      middle_text =
+        Element.new(
+          "text",
+          %{x: 20, y: 20, "font-size": 12, "text-anchor": "middle", fill: "#000000"},
+          ["AAAA"]
+        )
+
+      start_canvas = Rasterizer.rasterize(Element.new("svg", %{}, [start_text]), 40, 40)
+      middle_canvas = Rasterizer.rasterize(Element.new("svg", %{}, [middle_text]), 40, 40)
+
+      refute start_canvas == middle_canvas
+    end
+  end
 end
