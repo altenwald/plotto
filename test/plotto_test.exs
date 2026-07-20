@@ -114,4 +114,29 @@ defmodule PlottoTest do
       assert_raise ArgumentError, fn -> Plotto.to_png!(%{not: "a chart"}) end
     end
   end
+
+  describe "to_png!/1 end-to-end" do
+    test "a bar chart with a title, custom colors, and 3+ items renders without error" do
+      data = [
+        %{label: "Jan", value: 10},
+        %{label: "Feb", value: 25},
+        %{label: "Mar", value: 18},
+        %{label: "Apr", value: 30}
+      ]
+
+      chart = BarChart.new!(data, title: "Sales", colors: ["#4E79A7", "#F28E2B"])
+      png = Plotto.to_png!(chart)
+
+      assert byte_size(png) > 0
+      assert binary_part(png, 0, 8) == @png_signature
+    end
+
+    test "a chart with a label containing accented characters renders without error" do
+      data = [%{label: "Niño", value: 10}, %{label: "café", value: 15}]
+      chart = BarChart.new!(data, title: "Tendencias")
+
+      png = Plotto.to_png!(chart)
+      assert binary_part(png, 0, 8) == @png_signature
+    end
+  end
 end
