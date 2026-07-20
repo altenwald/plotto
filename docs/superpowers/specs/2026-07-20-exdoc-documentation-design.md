@@ -48,7 +48,9 @@ This is a documentation-only change: no runtime behavior changes anywhere in `li
 
 ## `mix.exs` changes
 
-- Add `{:ex_doc, "~> 0.34", only: :dev, runtime: false}` to `deps/0`. This is a dev-only
+- Add `{:ex_doc, "~> 0.40", only: :dev, runtime: false}` to `deps/0` (0.40.3 is the
+  latest release as of this spec's writing — verify against `mix hex.info ex_doc` at
+  implementation time in case a newer version has shipped). This is a dev-only
   dependency — it does not affect `Plotto`'s runtime dependency footprint (still zero)
   for library consumers.
 - Add a `docs/0` private function, wired into `project/0` via `docs: docs()`:
