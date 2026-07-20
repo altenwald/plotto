@@ -1,6 +1,7 @@
 defmodule PlottoTest do
   use ExUnit.Case, async: true
 
+  doctest Plotto
   doctest Plotto.BarChart
   doctest Plotto.LineChart
 
