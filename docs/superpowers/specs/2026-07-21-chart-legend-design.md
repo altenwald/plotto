@@ -74,6 +74,9 @@ A new `Plotto.Options.validate/1` returns `:ok | {:error, reason}`:
   `:bottom_right` → `:ok`.
 - Any other `:legend` value → `{:error, "invalid legend position, got: #{inspect(value)}"}`.
 
+`Options.validate/1` takes the raw `opts` keyword list (the same input
+`Options.build/1` receives), not the already-built options map.
+
 `Plotto.Chart.Builder.new/3` runs `Data.validate/1` and `Options.validate/1`
 (order: data first, matching current behavior of validating data before
 building), returning the first error encountered. `new!/3` raises
@@ -173,6 +176,9 @@ programmer-facing generated documentation, not just a repo README:
   document `:name` and `:legend` (the four valid positions, and that both
   must be set together for a legend to render) with the same level of
   detail as existing options.
+- `@type options` typespecs on `Plotto.BarChart` and `Plotto.LineChart`
+  (currently `width`/`height`/`title`/`colors` only): extend with `:name`
+  and `:legend` so they don't drift from the actual accepted options.
 - `README.md`: document `:name` and `:legend` alongside the other chart
   options (`:title`, `:colors`, etc.), since it's rendered into the same
   generated ExDoc site.
