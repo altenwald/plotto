@@ -60,4 +60,23 @@ defmodule Plotto.Font.TrueTypeTest do
       refute head == nil
     end
   end
+
+  describe "cmap parsing" do
+    test "parse_cmap/1 maps 'A' (U+0041) to glyph id 36" do
+      tables = TrueType.parse_tables(@font_binary)
+      cmap = TrueType.parse_cmap(TrueType.table_data(@font_binary, tables, "cmap"))
+
+      assert cmap[?A] == 36
+    end
+
+    test "parse_cmap/1 maps a large set of Latin characters" do
+      tables = TrueType.parse_tables(@font_binary)
+      cmap = TrueType.parse_cmap(TrueType.table_data(@font_binary, tables, "cmap"))
+
+      assert map_size(cmap) > 1000
+      assert Map.has_key?(cmap, ?e)
+      assert Map.has_key?(cmap, 0x00E9)
+      assert Map.has_key?(cmap, 0x00F1)
+    end
+  end
 end

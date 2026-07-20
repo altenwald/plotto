@@ -86,4 +86,111 @@ defmodule Plotto.Font.TrueType do
   defp parse_extra_lsbs(<<lsb::16-signed, rest::binary>>, count, acc) do
     parse_extra_lsbs(rest, count - 1, [lsb | acc])
   end
+
+  def parse_cmap(<<_version::16, num_tables::16, rest::binary>>) do
+    encoding_records = parse_cmap_encoding_records(rest, num_tables, [])
+
+    {_platform, _encoding, offset} =
+      Enum.find(encoding_records, List.first(encoding_records), fn {platform, encoding, _offset} ->
+        platform == 3 and encoding == 1
+      end)
+
+    subtable = binary_part(rest, offset - 4, byte_size(rest) - (offset - 4))
+    parse_cmap_format4(subtable)
+  end
+
+  defp parse_cmap_encoding_records(_binary, 0, acc), do: Enum.reverse(acc)
+
+  defp parse_cmap_encoding_records(
+         <<platform::16, encoding::16, offset::32, rest::binary>>,
+         count,
+         acc
+       ) do
+    parse_cmap_encoding_records(rest, count - 1, [{platform, encoding, offset} | acc])
+  end
+
+  defp parse_cmap_format4(
+         <<4::16, _length::16, _language::16, seg_count_x2::16, _search_range::16,
+           _entry_selector::16, _range_shift::16, rest::binary>>
+       ) do
+    seg_count = div(seg_count_x2, 2)
+    {end_codes, rest} = take_uint16_list(rest, seg_count)
+    <<_reserved_pad::16, rest::binary>> = rest
+    {start_codes, rest} = take_uint16_list(rest, seg_count)
+    {id_deltas, rest} = take_int16_list(rest, seg_count)
+    {id_range_offsets, glyph_id_array_binary} = take_uint16_list(rest, seg_count)
+
+    build_cmap(end_codes, start_codes, id_deltas, id_range_offsets, glyph_id_array_binary)
+  end
+
+  defp take_uint16_list(binary, count) do
+    <<values::binary-size(count * 2), rest::binary>> = binary
+    {for(<<v::16 <- values>>, do: v), rest}
+  end
+
+  defp take_int16_list(binary, count) do
+    <<values::binary-size(count * 2), rest::binary>> = binary
+    {for(<<v::16-signed <- values>>, do: v), rest}
+  end
+
+  defp build_cmap(end_codes, start_codes, id_deltas, id_range_offsets, glyph_id_array_binary) do
+    segments = Enum.zip([end_codes, start_codes, id_deltas, id_range_offsets])
+    seg_count = Enum.count(segments)
+
+    segments
+    |> Enum.with_index()
+    |> Enum.reduce(%{}, fn {{end_code, start_code, id_delta, id_range_offset}, seg_index}, acc ->
+      Enum.reduce(start_code..end_code, acc, fn code, acc ->
+        if code == 0xFFFF do
+          acc
+        else
+          glyph_id =
+            resolve_glyph_id(
+              code,
+              start_code,
+              id_delta,
+              id_range_offset,
+              seg_index,
+              seg_count,
+              glyph_id_array_binary
+            )
+
+          if glyph_id == 0, do: acc, else: Map.put(acc, code, glyph_id)
+        end
+      end)
+    end)
+  end
+
+  defp resolve_glyph_id(
+         code,
+         _start_code,
+         id_delta,
+         0,
+         _seg_index,
+         _seg_count,
+         _glyph_id_array_binary
+       ) do
+    rem(code + id_delta, 65536)
+  end
+
+  defp resolve_glyph_id(
+         code,
+         start_code,
+         id_delta,
+         id_range_offset,
+         seg_index,
+         seg_count,
+         glyph_id_array_binary
+       ) do
+    offset_in_array = id_range_offset + 2 * (code - start_code) - 2 * (seg_count - seg_index)
+
+    case glyph_id_array_binary do
+      <<_skip::binary-size(offset_in_array), glyph_index::16, _rest::binary>>
+      when offset_in_array >= 0 ->
+        if glyph_index == 0, do: 0, else: rem(glyph_index + id_delta, 65536)
+
+      _ ->
+        0
+    end
+  end
 end
