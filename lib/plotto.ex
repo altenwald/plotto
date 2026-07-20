@@ -1,11 +1,12 @@
 defmodule Plotto do
   @moduledoc """
-  Plotto generates SVG charts in pure Elixir.
+  Plotto generates SVG and PNG charts in pure Elixir.
 
   ## Example
 
       chart = Plotto.BarChart.new!([%{label: "Jan", value: 10}], title: "Sales")
       svg = Plotto.to_svg!(chart)
+      png = Plotto.to_png!(chart)
 
   """
 
