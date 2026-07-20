@@ -165,12 +165,17 @@ the PNG export pipeline already relies on.
 
 ## Documentation
 
+This project ships ExDoc-generated docs (`mix.exs`'s `docs/0` sets
+`extras: ["README.md"]`), so both the moduledocs and the README are the
+programmer-facing generated documentation, not just a repo README:
+
+- Moduledocs/`@doc` for `Plotto.BarChart.new/2` and `Plotto.LineChart.new/2`:
+  document `:name` and `:legend` (the four valid positions, and that both
+  must be set together for a legend to render) with the same level of
+  detail as existing options.
 - `README.md`: document `:name` and `:legend` alongside the other chart
-  options (`:title`, `:colors`, etc.), including the four valid positions.
-- Moduledocs for `Plotto.BarChart` and `Plotto.LineChart` (and any
-  `Plotto.Options`/`Plotto.Chart.Builder` reference docs that list
-  options): mention the new options with the same level of detail as
-  existing ones.
+  options (`:title`, `:colors`, etc.), since it's rendered into the same
+  generated ExDoc site.
 
 ## Open questions for the implementation plan
 
