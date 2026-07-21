@@ -4,9 +4,9 @@ defmodule Plotto.Chart.Builder do
   alias Plotto.{Data, Options}
 
   def new(module, data, opts) do
-    case Data.validate(data) do
-      :ok -> {:ok, struct(module, data: data, opts: Options.build(opts))}
-      {:error, _reason} = error -> error
+    with :ok <- Data.validate(data),
+         :ok <- Options.validate(opts) do
+      {:ok, struct(module, data: data, opts: Options.build(opts))}
     end
   end
 
