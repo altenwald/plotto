@@ -6,7 +6,7 @@ defmodule Plotto.SVG.Renderer.BarChart do
   alias Plotto.{Axis, Theme}
 
   def render(%Plotto.BarChart{data: data, opts: opts}) do
-    margin = Theme.margin()
+    margin = Shared.effective_margin(Theme.margin(), opts.legend, opts.name)
     plot_width = opts.width - margin.left - margin.right
     plot_height = opts.height - margin.top - margin.bottom
 
@@ -20,9 +20,19 @@ defmodule Plotto.SVG.Renderer.BarChart do
       |> Enum.with_index()
       |> Enum.map(&build_bar(&1, margin, plot_height, max_value, opts.colors))
 
+    legend =
+      Shared.legend_elements(
+        opts.name,
+        opts.legend,
+        Theme.color(opts.colors, 0),
+        margin,
+        opts.width,
+        opts.height
+      )
+
     children =
       Shared.axis_elements(bands, margin, plot_width, plot_height, max_value) ++
-        bars ++ Shared.title_elements(opts.title, opts.width)
+        bars ++ Shared.title_elements(opts.title, opts.width) ++ legend
 
     Shared.svg_root(opts.width, opts.height, children)
   end
