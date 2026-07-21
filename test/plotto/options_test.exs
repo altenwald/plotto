@@ -18,4 +18,31 @@ defmodule Plotto.OptionsTest do
     assert opts.title == "Sales"
     assert opts.colors == ["#000000"]
   end
+
+  test "fills in :name and :legend as nil by default" do
+    opts = Options.build([])
+    assert opts.name == nil
+    assert opts.legend == nil
+  end
+
+  test "overrides :name and :legend when given" do
+    opts = Options.build(name: "Sales", legend: :top_right)
+    assert opts.name == "Sales"
+    assert opts.legend == :top_right
+  end
+
+  test "validate/1 returns :ok when :legend is absent" do
+    assert Options.validate([]) == :ok
+  end
+
+  test "validate/1 returns :ok for each of the four valid legend positions" do
+    for position <- Plotto.Theme.legend_positions() do
+      assert Options.validate(legend: position) == :ok
+    end
+  end
+
+  test "validate/1 returns {:error, reason} for an invalid legend position" do
+    assert Options.validate(legend: :middle) ==
+             {:error, "invalid legend position, got: :middle"}
+  end
 end
