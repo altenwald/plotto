@@ -31,4 +31,14 @@ defmodule Plotto.ThemeTest do
   test "color/2 falls back to the default palette when given an empty list" do
     assert Theme.color([], 0) == List.first(Theme.default_colors())
   end
+
+  test "legend_positions/0 returns the four valid corner atoms" do
+    assert Theme.legend_positions() == [:top_left, :top_right, :bottom_left, :bottom_right]
+  end
+
+  test "legend_swatch_size/0, legend_gap/0, and legend_row_height/0 return positive integers" do
+    assert Theme.legend_swatch_size() > 0
+    assert Theme.legend_gap() > 0
+    assert Theme.legend_row_height() > 0
+  end
 end
