@@ -6,6 +6,8 @@ It is very useful when you are developing a website and need to integrate SVG ch
 
 If you need to export or generate PNG charts for email, PDF, or sending via Telegram, Slack, Mattermost, etc., `Plotto.to_png/1` renders the same chart to a PNG binary, anti-aliased and with full Unicode text support (including accented characters like á, é, ñ) via a bundled DejaVu Sans font.
 
+Charts can also show an optional title and a single-entry legend (a color swatch plus a series name), positioned in any of the four corners — see `:title`, `:name`, and `:legend` in `Plotto.BarChart` or `Plotto.LineChart`.
+
 ## Usage
 
 ```elixir
