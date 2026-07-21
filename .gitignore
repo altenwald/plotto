@@ -24,3 +24,6 @@ plotto-*.tar
 
 # Temporary files, for example, from tests.
 /tmp/
+
+# Git worktrees used for isolated feature development.
+/.worktrees/
