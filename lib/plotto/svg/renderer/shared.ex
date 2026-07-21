@@ -118,6 +118,7 @@ defmodule Plotto.SVG.Renderer.Shared do
 
   def legend_elements(nil, _legend, _color, _margin, _width, _height), do: []
   def legend_elements(_name, nil, _color, _margin, _width, _height), do: []
+  def legend_elements(_name, legend, _color, _margin, _width, _height) when legend not in [:top_left, :top_right, :bottom_left, :bottom_right], do: []
 
   def legend_elements(name, legend, color, margin, width, height) do
     swatch_size = Theme.legend_swatch_size()

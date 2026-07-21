@@ -104,6 +104,10 @@ defmodule Plotto.SVG.Renderer.SharedTest do
       assert Shared.legend_elements("Sales", nil, "#000000", @margin, 600, 400) == []
     end
 
+    test "returns [] for a legend atom outside the four valid positions (defensive — normally blocked upstream by Options.validate/1)" do
+      assert Shared.legend_elements("Sales", :middle, "#000000", @margin, 600, 400) == []
+    end
+
     test "returns a swatch <rect> and a <text> for a left position" do
       [swatch, text] = Shared.legend_elements("Sales", :top_left, "#4E79A7", @margin, 600, 400)
 
