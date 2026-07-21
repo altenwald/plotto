@@ -36,6 +36,17 @@ defmodule PlottoTest do
     assert svg =~ "&lt;script&gt;"
   end
 
+  test "a bar chart with a legend renders the swatch and name end to end in SVG" do
+    chart =
+      BarChart.new!([%{label: "Jan", value: 10}, %{label: "Feb", value: 25}],
+        name: "Sales",
+        legend: :top_right
+      )
+
+    svg = Plotto.to_svg!(chart)
+    assert svg =~ "Sales"
+  end
+
   test "bar colors cycle through the palette end to end for 3+ items" do
     colors = Plotto.Theme.default_colors()
     data = for i <- 0..6, do: %{label: "Item#{i}", value: i + 1}
@@ -135,6 +146,28 @@ defmodule PlottoTest do
     test "a chart with a label containing accented characters renders without error" do
       data = [%{label: "Niño", value: 10}, %{label: "café", value: 15}]
       chart = BarChart.new!(data, title: "Tendencias")
+
+      png = Plotto.to_png!(chart)
+      assert binary_part(png, 0, 8) == @png_signature
+    end
+
+    test "a bar chart with a legend renders without error" do
+      chart =
+        BarChart.new!([%{label: "Jan", value: 10}, %{label: "Feb", value: 25}],
+          name: "Sales",
+          legend: :bottom_left
+        )
+
+      png = Plotto.to_png!(chart)
+      assert binary_part(png, 0, 8) == @png_signature
+    end
+
+    test "a line chart with a legend renders without error" do
+      chart =
+        LineChart.new!([%{label: "Jan", value: 10}, %{label: "Feb", value: 25}],
+          name: "Revenue",
+          legend: :top_left
+        )
 
       png = Plotto.to_png!(chart)
       assert binary_part(png, 0, 8) == @png_signature
