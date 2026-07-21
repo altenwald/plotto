@@ -10,11 +10,13 @@ defmodule Plotto do
 
   ## Options
 
-  Both `Plotto.BarChart` and `Plotto.LineChart` accept the same four options via
-  `new/2`/`new!/2`: `:width`, `:height`, `:title`, `:colors`. See
+  Both `Plotto.BarChart` and `Plotto.LineChart` accept the same six options via
+  `new/2`/`new!/2`: `:width`, `:height`, `:title`, `:colors`, `:name`, `:legend`. See
   `Plotto.BarChart.new/2` (or `Plotto.LineChart.new/2`) for their exact defaults and
   shapes — line charts differ slightly in how `:colors` is used (only the first color
-  is applied, as the single line's stroke), documented there.
+  is applied, as the single line's stroke), documented there. `:name` and `:legend`
+  together control an optional single-entry legend (a color swatch plus the series
+  name), positioned in one of the chart's four corners.
 
   ## Error handling
 

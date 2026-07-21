@@ -42,7 +42,9 @@ defmodule Plotto.LineChart do
           width: pos_integer(),
           height: pos_integer(),
           title: String.t() | nil,
-          colors: [String.t()]
+          colors: [String.t()],
+          name: String.t() | nil,
+          legend: :top_left | :top_right | :bottom_left | :bottom_right | nil
         }
 
   @type t :: %__MODULE__{data: [data_item()], opts: options()}
@@ -63,6 +65,12 @@ defmodule Plotto.LineChart do
     * `:colors` - list of `"#RRGGBB"` hex color strings; only the *first* color is
       used, as the line's stroke color (line charts render a single line, so there's
       no cycling). Defaults to `["#4E79A7", "#F28E2B", "#E15759", "#76B7B2", "#59A14F"]`.
+    * `:name` - optional series name, shown in the legend when `:legend` is also set.
+      Defaults to `nil`.
+    * `:legend` - optional legend position: `:top_left`, `:top_right`, `:bottom_left`,
+      or `:bottom_right`. The legend swatch uses the same first color as the line
+      itself. Only renders when **both** `:legend` and `:name` are set. Defaults to
+      `nil` (no legend).
 
   ## Examples
 
@@ -78,6 +86,18 @@ defmodule Plotto.LineChart do
       ...>   )
       iex> {chart.opts.title, chart.opts.colors}
       {"Trend", ["#000000"]}
+
+      iex> {:ok, chart} =
+      ...>   Plotto.LineChart.new(
+      ...>     [%{label: "Jan", value: 10}],
+      ...>     name: "Sales",
+      ...>     legend: :top_right
+      ...>   )
+      iex> {chart.opts.name, chart.opts.legend}
+      {"Sales", :top_right}
+
+      iex> Plotto.LineChart.new([%{label: "Jan", value: 10}], legend: :middle)
+      {:error, "invalid legend position, got: :middle"}
 
       iex> Plotto.LineChart.new([])
       {:error, "data must not be empty"}
