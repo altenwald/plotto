@@ -118,7 +118,10 @@ defmodule Plotto.SVG.Renderer.Shared do
 
   def legend_elements(nil, _legend, _color, _margin, _width, _height), do: []
   def legend_elements(_name, nil, _color, _margin, _width, _height), do: []
-  def legend_elements(_name, legend, _color, _margin, _width, _height) when legend not in [:top_left, :top_right, :bottom_left, :bottom_right], do: []
+
+  def legend_elements(_name, legend, _color, _margin, _width, _height)
+      when legend not in [:top_left, :top_right, :bottom_left, :bottom_right],
+      do: []
 
   def legend_elements(name, legend, color, margin, width, height) do
     swatch_size = Theme.legend_swatch_size()
@@ -137,10 +140,9 @@ defmodule Plotto.SVG.Renderer.Shared do
     # margin.bottom instead (as an earlier version of this code did) would place the
     # legend on the exact same baseline as the tick labels for any dataset.
     #
-    # Both formulas assume Options.validate/1 has already rejected any :legend value
-    # outside Theme.legend_positions/0 — Plotto.Chart.Builder.new/3 guarantees this for
-    # charts built via BarChart.new/LineChart.new, but a hand-built chart struct that
-    # bypasses that validation would hit a CaseClauseError here.
+    # By this point `legend` is guaranteed to be one of the four valid positions —
+    # the guard clause above already returns [] for any other value, so neither
+    # `case` below needs (or should have) a fallback clause.
     y_center =
       case legend do
         position when position in [:top_left, :top_right] -> margin.top - row_height / 2
