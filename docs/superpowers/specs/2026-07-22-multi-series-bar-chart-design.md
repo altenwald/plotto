@@ -50,6 +50,17 @@ authoritative and unchanged.
   series (swatch + series name), stacked vertically, when `:legend` is set.
 - Existing single-series callers must migrate to the new shape — this is a
   breaking change, acceptable pre-1.0.
+- **Also intentionally breaking, independent of the shape change:** a
+  single-series `BarChart` with 2+ categories currently renders each bar in a
+  *different* color (`Theme.color(colors, category_index)` — see
+  `lib/plotto/bar_chart.ex`'s current `:colors` doc, "cycled one per bar").
+  Under this spec every bar in a series shares **one** color
+  (`Theme.color(colors, series_index)`, and `series_index` is always `0` for
+  a single series) — this is the fix for the original problem that motivated
+  this whole project: a single-series bar chart's legend swatch (one color)
+  looked inconsistent next to bars that were each a different color. Existing
+  single-series charts with 2+ categories will visibly change from
+  multi-colored bars to one solid color per chart once this ships.
 
 ## Non-goals (for this slice)
 
@@ -243,6 +254,19 @@ legended like `BarChart`'s series). `Plotto.LineChart`'s moduledoc should
 note this limitation explicitly ("only the first series is drawn; full
 multi-series support is planned") so it isn't mistaken for a bug.
 
+**Legend during Phase 1:** since only the first series is ever drawn, the
+legend must show **only that first series' entry**, not one row per series
+in `data`. Concretely, `LineChart.render/1` calls the shared legend
+functions (`effective_margin/3`/`legend_elements/6`) with a one-element
+list — `[{List.first(data).name, Theme.color(opts.colors, 0)}]` — exactly
+as if `data` had length 1, regardless of how many series are actually
+present. This avoids legend rows referencing series that have no
+corresponding visual mark on the chart (the same mismatch risk the
+`effective_margin`/`legend_elements` drawable-count consistency requirement
+above is meant to prevent, recurring at this call site). A test must cover
+this: a 3-series `LineChart` with `:legend` set renders exactly one legend
+row (the first series'), not three.
+
 ## Testing strategy
 
 - `Plotto.Data.validate/1`: rewritten test suite covering — valid
@@ -254,11 +278,15 @@ multi-series support is planned") so it isn't mistaken for a bug.
 - `Plotto.Chart.Builder`/`Plotto.BarChart`/`Plotto.LineChart` `new/2`/`new!/2`:
   updated to build/accept the new shape; existing error-tuple/raise
   contracts unchanged.
-- `Plotto.SVG.Renderer.BarChart`: single-series rendering unchanged
-  (regression-checked against today's pixel positions); multi-series
-  rendering tested for 2 and 3 series — bar count per category, sub-bar
-  widths/x-positions matching the flush/no-gap formula, correct per-series
-  color, correct `max_value` spanning all series.
+- `Plotto.SVG.Renderer.BarChart`: single-series bar **geometry** (position,
+  width, height per bar) regression-checked against today's pixel positions
+  — unchanged. Single-series bar **color** is *not* a no-op: replace today's
+  per-category-cycling color test with one asserting all bars in a single
+  series share one color (`Theme.color(colors, 0)`) — the intentional
+  breaking change called out in Goals. Multi-series rendering tested for 2
+  and 3 series — bar count per category, sub-bar widths/x-positions matching
+  the flush/no-gap formula, correct per-series color, correct `max_value`
+  spanning all series.
 - `Plotto.SVG.Renderer.Shared`: `legend_elements/6`'s new list-based contract
   — empty list/`nil` legend → `[]`; 1 entry → same visual output as the prior
   single-entry design (regression check against the already-fixed
@@ -270,7 +298,9 @@ multi-series support is planned") so it isn't mistaken for a bug.
   functions failure mode called out above, and must be regression-tested,
   not just asserted in prose.
 - `Plotto.SVG.Renderer.LineChart`: regression test that a multi-series input
-  still renders (only the first series' line/points, no crash).
+  still renders (only the first series' line/points, no crash), and that a
+  multi-series chart with `:legend` set renders exactly one legend row (the
+  first series'), not one per series present in `data`.
 - End-to-end (`Plotto.to_svg!/1`/`to_png!/1`): a 2-series bar chart with
   legend renders both series' names/colors in SVG and produces a valid PNG.
 - Update `examples/bar_chart.exs` to the new data shape; add a new example
