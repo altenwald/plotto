@@ -18,9 +18,9 @@ png = Plotto.to_png!(chart)
 
 `Plotto.LineChart` works the same way. See `Plotto.BarChart` and `Plotto.LineChart` for the full data/options shape.
 
-## Example
+## Examples
 
-[examples/bar_chart.exs](examples/bar_chart.exs) generates the SVG below (`mix run examples/bar_chart.exs`):
+[examples/bar_chart.exs](examples/bar_chart.exs) generates the chart below (`mix run examples/bar_chart.exs`), including a title and a top-right legend:
 
 ```elixir
 data = [
@@ -32,13 +32,28 @@ data = [
   %{label: "Jun", value: 90}
 ]
 
-chart = Plotto.BarChart.new!(data, title: "Monthly Sales")
+chart = Plotto.BarChart.new!(data, title: "Monthly Sales", name: "Sales", legend: :top_right)
 svg = Plotto.to_svg!(chart)
+png = Plotto.to_png!(chart)
 
 File.write!(Path.join(__DIR__, "bar_chart.svg"), svg)
+File.write!(Path.join(__DIR__, "bar_chart.png"), png)
 ```
 
 ![Bar chart example](examples/bar_chart.png)
+
+[examples/line_chart.exs](examples/line_chart.exs) generates the same data as a line chart (`mix run examples/line_chart.exs`), this time with a bottom-left legend:
+
+```elixir
+chart = Plotto.LineChart.new!(data, title: "Monthly Sales", name: "Sales", legend: :bottom_left)
+svg = Plotto.to_svg!(chart)
+png = Plotto.to_png!(chart)
+
+File.write!(Path.join(__DIR__, "line_chart.svg"), svg)
+File.write!(Path.join(__DIR__, "line_chart.png"), png)
+```
+
+![Line chart example](examples/line_chart.png)
 
 ## Installation
 

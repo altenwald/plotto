@@ -9,5 +9,7 @@ data = [
 
 chart = Plotto.BarChart.new!(data, title: "Monthly Sales", name: "Sales", legend: :top_right)
 svg = Plotto.to_svg!(chart)
+png = Plotto.to_png!(chart)
 
 File.write!(Path.join(__DIR__, "bar_chart.svg"), svg)
+File.write!(Path.join(__DIR__, "bar_chart.png"), png)
