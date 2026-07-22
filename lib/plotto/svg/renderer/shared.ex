@@ -4,6 +4,11 @@ defmodule Plotto.SVG.Renderer.Shared do
   alias Plotto.SVG.Element
   alias Plotto.{Axis, Theme}
 
+  # Compile-time snapshot of Theme.legend_positions/0 — module attributes are inlined
+  # as literals at compile time, so (unlike a direct Theme.legend_positions() call)
+  # this can be referenced from a guard clause below.
+  @legend_positions Theme.legend_positions()
+
   def svg_root(width, height, children) do
     Element.new(
       "svg",
@@ -120,7 +125,7 @@ defmodule Plotto.SVG.Renderer.Shared do
   def legend_elements(_name, nil, _color, _margin, _width, _height), do: []
 
   def legend_elements(_name, legend, _color, _margin, _width, _height)
-      when legend not in [:top_left, :top_right, :bottom_left, :bottom_right],
+      when legend not in @legend_positions,
       do: []
 
   def legend_elements(name, legend, color, margin, width, height) do
@@ -184,6 +189,6 @@ defmodule Plotto.SVG.Renderer.Shared do
   end
 
   defp draws_legend?(legend, name) do
-    legend in Theme.legend_positions() and not is_nil(name)
+    legend in @legend_positions and not is_nil(name)
   end
 end

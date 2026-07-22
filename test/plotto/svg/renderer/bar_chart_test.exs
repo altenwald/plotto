@@ -82,4 +82,37 @@ defmodule Plotto.SVG.Renderer.BarChartTest do
 
     assert legend_y1 == base_y1 + Plotto.Theme.legend_row_height()
   end
+
+  test ":bottom_right legend renders with a realistic multi-bar, custom-palette chart" do
+    data = [
+      %{label: "Jan", value: 10},
+      %{label: "Feb", value: 25},
+      %{label: "Mar", value: 18},
+      %{label: "Apr", value: 30}
+    ]
+
+    colors = ["#111111", "#222222", "#333333"]
+
+    chart =
+      BarChart.new!(data, name: "Sales", legend: :bottom_right, colors: colors)
+
+    svg = Renderer.render(chart)
+
+    rects = Enum.filter(svg.children, &(&1.tag == "rect"))
+    # 4 bars + 1 legend swatch
+    assert length(rects) == 5
+
+    # Distinguish the legend swatch from bars by its fixed, small width — with 3
+    # colors cycled across 4 bars, more than one bar could coincidentally share the
+    # legend's color (Theme.color(colors, 0)), so filtering by color alone isn't
+    # reliable here.
+    swatch_width = to_string(Plotto.Theme.legend_swatch_size())
+    [legend_swatch] = Enum.filter(rects, &(&1.attrs["width"] == swatch_width))
+    assert legend_swatch.attrs["fill"] == Enum.at(colors, 0)
+
+    assert Enum.any?(svg.children, fn
+             %{tag: "text", children: ["Sales"]} = text -> text.attrs["text-anchor"] == "end"
+             _ -> false
+           end)
+  end
 end
