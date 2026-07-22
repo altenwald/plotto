@@ -174,11 +174,22 @@ of `:top_*`/`:bottom_*` — no reversal for bottom positions), each row
 swatch-then-text or text-then-swatch ordering) is unchanged per row from the
 single-entry design.
 
-`Plotto.SVG.Renderer.Shared.effective_margin/3` reserves
-`Theme.legend_row_height() * n_series` (instead of a flat
-`legend_row_height()`) in `margin.top` or `margin.bottom`, following the same
+`Plotto.SVG.Renderer.Shared.effective_margin/3` must take the same
+list-of-names (or `[{name, color}]`) input `legend_elements` does — **not**
+a bare series count — so it can independently derive "how many rows will
+actually be drawn" using the identical rule `legend_elements` uses (0 for the
+single-series/`name: nil` case, `n_series` otherwise), and reserve
+`Theme.legend_row_height() * drawable_row_count` accordingly (in
+`margin.top` or `margin.bottom`, following the same
 top-anchored-to-margin / bottom-anchored-to-absolute-height split established
-(and bug-fixed) in the prior legend spec.
+and bug-fixed in the prior legend spec). Passing a bare integer count here
+instead would let `effective_margin/3` and `legend_elements/6` disagree on
+whether the single-series/`nil`-name case draws anything — reserving space
+that then renders empty, the same class of bug the prior spec's bottom-band
+fix addressed. Whatever shape the implementation plan settles on for this
+shared input, both functions must derive "how many rows" from it the same
+way, ideally via one shared helper (mirroring today's `draws_legend?/2`,
+generalized from a single name to a list).
 
 **Per-row vertical center formula**, generalizing the prior spec's single-row
 formula (which is this formula's `n_series = 1, i = 0` case): for row index
@@ -192,11 +203,17 @@ anchor = height                         # :bottom_left / :bottom_right (absolute
 y_center(i) = anchor - row_height * (n_series - i - 0.5)
 ```
 
-This places row `0` closest to the anchor's far edge from the plot (i.e.
-topmost for `:top_*`, bottommost — closest to the canvas edge — for
-`:bottom_*`) and row `n_series - 1` closest to the plot area, matching "first
-series topmost" for top positions and keeping the reserved band's edge
-nearest the plot free of the last row for bottom positions. Horizontal
+Since `y_center(i) = [anchor - row_height * (n_series - 0.5)] + row_height * i`
+is strictly increasing in `i` with a slope independent of which `anchor` is
+used, row `0` always has the **smallest** `y_center` (topmost within the
+reserved band) and row `n_series - 1` always has the **largest** (bottommost
+within the band) — for *both* `:top_*` and `:bottom_*` positions, not just
+top. Concretely, for `:bottom_*` (band `[height - row_height*n_series,
+height]`): row `0` sits at the top of that band, closest to the plot area
+above it; row `n_series - 1` sits at the bottom, closest to the canvas edge.
+This is what makes "first series topmost, no reversal for bottom positions"
+(stated above) true — it is not a special case requiring different handling
+per anchor, just this one formula applied uniformly. Horizontal
 (`swatch_x`/`text_x`/`text_anchor`) placement per row is identical to the
 single-entry formula, unchanged per row.
 
@@ -246,7 +263,12 @@ multi-series support is planned") so it isn't mistaken for a bug.
   — empty list/`nil` legend → `[]`; 1 entry → same visual output as the prior
   single-entry design (regression check against the already-fixed
   top/bottom-anchoring math); N entries → correct stacked row positions,
-  reserved-margin height scales with N.
+  reserved-margin height scales with N. Explicitly test that
+  `effective_margin/3`, given the single-series/`name: nil` input, reserves
+  **zero** extra margin (matching `legend_elements/6` drawing nothing for
+  that same input) — this is the specific disagreement-between-the-two-
+  functions failure mode called out above, and must be regression-tested,
+  not just asserted in prose.
 - `Plotto.SVG.Renderer.LineChart`: regression test that a multi-series input
   still renders (only the first series' line/points, no crash).
 - End-to-end (`Plotto.to_svg!/1`/`to_png!/1`): a 2-series bar chart with
