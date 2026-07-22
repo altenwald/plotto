@@ -8,6 +8,8 @@ defmodule Plotto.MixProject do
       elixir: "~> 1.17",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
+      description:
+        "A 100% Elixir library for generating SVG and PNG charts, no external binaries or NIFs required",
       package: package(),
       docs: docs()
     ]
@@ -22,14 +24,16 @@ defmodule Plotto.MixProject do
 
   defp package do
     [
-      files: ~w(lib fonts mix.exs README* .formatter.exs)
+      files: ~w(lib fonts mix.exs README* LICENSE* .formatter.exs),
+      licenses: ["MIT"],
+      links: %{"GitHub" => "https://github.com/altenwald/plotto"}
     ]
   end
 
   defp docs do
     [
       main: "readme",
-      extras: ["README.md"],
+      extras: ["README.md", "LICENSE"],
       source_url: "https://github.com/altenwald/plotto"
     ]
   end
