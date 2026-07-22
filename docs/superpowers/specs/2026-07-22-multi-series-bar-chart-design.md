@@ -14,7 +14,12 @@ row per series, stacked vertically). This is **Phase 1** of a two-phase project;
 **Phase 2** (a separate spec/plan) gives `Plotto.LineChart` real multi-series
 rendering (multiple polylines). During Phase 1, `LineChart` keeps working but
 only renders its first series, ignoring any additional ones — see "LineChart
-during Phase 1" below.
+during Phase 1" below. Because `Plotto.Data`/`Plotto.Chart.Builder` are shared
+by both chart types, this is a breaking change for `LineChart` callers too:
+existing flat-list `LineChart.new/2` calls must migrate to the new
+one-element `[%{name:, data:}]` shape in this same phase, identically to
+`BarChart` callers, even though only the first series actually renders until
+Phase 2 lands.
 
 This spec **supersedes** the single-entry-legend design
 (`docs/superpowers/specs/2026-07-21-chart-legend-design.md`) with respect to the
@@ -175,13 +180,39 @@ single-entry design.
 top-anchored-to-margin / bottom-anchored-to-absolute-height split established
 (and bug-fixed) in the prior legend spec.
 
-A series with `name: nil` cannot reach the legend-rendering path in practice,
-since validation requires non-nil names whenever there are 2+ series (the
-only case where a legend has more than one row); a single-series chart with
-`name: nil` and `:legend` set renders one row with an empty text label (swatch
-only, no visible name) — this matches today's already-existing behavior for
-a single unnamed series, just expressed through the list-of-one-entry code
-path instead of a special case.
+**Per-row vertical center formula**, generalizing the prior spec's single-row
+formula (which is this formula's `n_series = 1, i = 0` case): for row index
+`i` (0-based, `i = 0` is the first/topmost series) out of `n_series` total
+rows,
+
+```
+anchor = margin.top                     # :top_left / :top_right (margin already enlarged by effective_margin/3)
+anchor = height                         # :bottom_left / :bottom_right (absolute canvas height — see prior spec's bug-fix rationale)
+
+y_center(i) = anchor - row_height * (n_series - i - 0.5)
+```
+
+This places row `0` closest to the anchor's far edge from the plot (i.e.
+topmost for `:top_*`, bottommost — closest to the canvas edge — for
+`:bottom_*`) and row `n_series - 1` closest to the plot area, matching "first
+series topmost" for top positions and keeping the reserved band's edge
+nearest the plot free of the last row for bottom positions. Horizontal
+(`swatch_x`/`text_x`/`text_anchor`) placement per row is identical to the
+single-entry formula, unchanged per row.
+
+Validation requires non-nil names whenever there are 2+ series (the only case
+where a legend has more than one row), so a `nil` name can only ever occur on
+a single-series chart. For that single-series-with-`name: nil` case, the
+**existing today's behavior is preserved, unchanged**: `:legend` renders
+nothing at all and reserves no layout space, exactly like today's
+`Shared.legend_elements(nil, ...)`/`draws_legend?/2` short-circuit (this is a
+correction to an earlier draft of this spec, which incorrectly claimed a
+swatch-only row "matches today's behavior" — it does not; today, `nil` means
+nothing is drawn, full stop, and this spec keeps that). Concretely: the new
+list-based `legend_elements` returns `[]` whenever the (at most one, in the
+`nil`-name case) resulting list of drawable `{name, color}` entries is empty
+— which happens only for the single-series-nil-name case, since 2+ series are
+guaranteed non-nil names by validation.
 
 ## LineChart during Phase 1
 
