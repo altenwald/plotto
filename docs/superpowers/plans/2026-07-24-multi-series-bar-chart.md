@@ -771,12 +771,20 @@ There are four such doctests, in the docs for `to_svg/1`, `to_svg!/1`, `to_png/1
 and `to_png!/1` — update the `chart = Plotto.BarChart.new!(...)` line in each to the
 new shape, keeping everything else in those doctests unchanged.
 
+Also update the moduledoc's top `## Example` code block (line 7, not an executed
+doctest — no `iex>` prompt, so it won't fail tests if missed, but it'll be visibly
+stale otherwise):
+
+```elixir
+chart = Plotto.BarChart.new!([%{name: "Sales", data: [%{label: "Jan", value: 10}]}], title: "Sales")
+```
+
 - [ ] **Step 4: Run tests to verify they pass**
 
 Run: `mix test test/plotto/bar_chart_test.exs test/plotto/line_chart_test.exs`
 Expected: PASS
 
-Do **not** run the full suite or `test/plotto_test.exs` expecting green yet — see this task's intro note. `doctest Plotto` will still fail until Task 6 is done (it calls `Plotto.to_svg/1`, which needs the renderer updated).
+Do **not** run the full suite or `test/plotto_test.exs` expecting green yet — see this task's intro note. `doctest Plotto`'s examples all construct `Plotto.BarChart` charts, so that specific doctest group will pass once Task 5 (BarChart renderer) lands; `doctest Plotto.LineChart`'s own examples don't call `Plotto.to_svg/1` so they're unaffected either way. `test/plotto/svg/renderer_test.exs` and `test/plotto_test.exs`'s own (non-doctest) tests are untouched until Task 7 and will still fail.
 
 - [ ] **Step 5: Commit**
 
@@ -1559,8 +1567,44 @@ git commit -m "Update Plotto.SVG.Renderer.LineChart for multi-series data (Phase
 
 **Files:**
 - Modify: `test/plotto_test.exs` (full rewrite)
+- Modify: `test/plotto/svg/renderer_test.exs` (data literal update only)
 
-This is the task where the whole suite (including `doctest Plotto`, which depends on the renderers from Tasks 5-6) should return to green.
+This is the task where the whole suite (including `doctest Plotto`, which depends on
+the renderers from Task 5 for `BarChart` examples) should return to green.
+
+`test/plotto/svg/renderer_test.exs` is a separate, easy-to-miss file — it's the
+`Plotto.SVG.Renderer` dispatch test (distinct from `test/plotto/svg/renderer/bar_chart_test.exs`
+and `line_chart_test.exs`, which Tasks 5-6 already updated). It still uses the old
+flat data shape and will raise `ArgumentError` once Task 1 lands, all the way
+through this task, unless fixed here. Update it first:
+
+In `test/plotto/svg/renderer_test.exs`, change:
+
+```elixir
+  test "dispatches BarChart to the bar chart renderer" do
+    chart = BarChart.new!([%{label: "Jan", value: 10}])
+```
+
+to:
+
+```elixir
+  test "dispatches BarChart to the bar chart renderer" do
+    chart = BarChart.new!([%{name: "Sales", data: [%{label: "Jan", value: 10}]}])
+```
+
+and change:
+
+```elixir
+  test "dispatches LineChart to the line chart renderer" do
+    chart = LineChart.new!([%{label: "Jan", value: 10}])
+```
+
+to:
+
+```elixir
+  test "dispatches LineChart to the line chart renderer" do
+    chart = LineChart.new!([%{name: "Trend", data: [%{label: "Jan", value: 10}]}])
+```
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -1753,7 +1797,7 @@ end
 - [ ] **Step 2: Run tests to verify they fail**
 
 Run: `mix test test/plotto_test.exs`
-Expected: at this point, given Tasks 1-6 are already done, this should mostly PASS already — this task is primarily about catching any remaining old-shape references and adding the new multi-series coverage. If something fails unexpectedly here, that indicates a real gap in Tasks 1-6; investigate there rather than patching around it here.
+Expected: at this point, given Tasks 1-6 and this task's Step 0 (`renderer_test.exs`) are already done, this should mostly PASS already — this task is primarily about catching any remaining old-shape references and adding the new multi-series coverage. If something fails unexpectedly here, first check whether it's a real gap in Tasks 1-6's logic, or another old-flat-shape reference lurking in a test file the plan didn't anticipate (as `renderer_test.exs` turned out to be) — run `grep -rn "label:.*value:" test/` and check every hit uses the new `%{name:, data: [...]}` shape before assuming the renderer/validation code itself is wrong.
 
 - [ ] **Step 3: Run tests to verify they pass**
 
@@ -1768,7 +1812,7 @@ Expected: PASS, all green — this is the first point in the plan where the whol
 - [ ] **Step 5: Commit**
 
 ```bash
-git add test/plotto_test.exs
+git add test/plotto_test.exs test/plotto/svg/renderer_test.exs
 git commit -m "Rewrite end-to-end tests for multi-series data"
 ```
 
@@ -1901,7 +1945,30 @@ Replace the bar chart code block with `examples/bar_chart.exs`'s new multi-serie
 [examples/bar_chart.exs](examples/bar_chart.exs) generates the chart below (`mix run examples/bar_chart.exs`), with two series ("Sales" and "Costs") grouped per month and a top-right legend:
 ```
 
-The line chart code block and its intro sentence stay conceptually the same, just reflecting the new single-series data shape (from Task 8, Step 2).
+Replace the line chart code block with `examples/line_chart.exs`'s new content (from Task 8, Step 2) — its intro sentence doesn't need wording changes, only the code block:
+
+```elixir
+data = [
+  %{
+    name: "Sales",
+    data: [
+      %{label: "Jan", value: 42},
+      %{label: "Feb", value: 58},
+      %{label: "Mar", value: 33},
+      %{label: "Apr", value: 71},
+      %{label: "May", value: 65},
+      %{label: "Jun", value: 90}
+    ]
+  }
+]
+
+chart = Plotto.LineChart.new!(data, title: "Monthly Sales", legend: :bottom_left)
+svg = Plotto.to_svg!(chart)
+png = Plotto.to_png!(chart)
+
+File.write!(Path.join(__DIR__, "line_chart.svg"), svg)
+File.write!(Path.join(__DIR__, "line_chart.png"), png)
+```
 
 - [ ] **Step 3: Verify ExDoc still builds cleanly**
 
