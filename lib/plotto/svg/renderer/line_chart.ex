@@ -16,21 +16,23 @@ defmodule Plotto.SVG.Renderer.LineChart do
 
     labels = Enum.map(series_data, & &1.label)
     bands = Axis.categorical_scale(labels, plot_width)
-    max_value = series_data |> Enum.map(& &1.value) |> Enum.max()
+    values = Enum.map(series_data, & &1.value)
+    min_value = min(0, Enum.min(values))
+    max_value = max(0, Enum.max(values))
 
     points =
       series_data
       |> Enum.zip(bands)
       |> Enum.map(fn {item, band} ->
         x = margin.left + band.x
-        y = margin.top + Axis.linear_scale(item.value, max_value, plot_height)
+        y = margin.top + Axis.linear_scale(item.value, min_value, max_value, plot_height)
         {item, x, y}
       end)
 
     legend = Shared.legend_elements(entries, opts.legend, margin, opts.width, opts.height)
 
     children =
-      Shared.axis_elements(bands, margin, plot_width, plot_height, max_value) ++
+      Shared.axis_elements(bands, margin, plot_width, plot_height, min_value, max_value) ++
         [build_polyline(points, color)] ++
         Enum.map(points, &build_point_circle(&1, color)) ++
         Shared.title_elements(opts.title, opts.width) ++

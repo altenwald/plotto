@@ -120,4 +120,31 @@ defmodule Plotto.SVG.Renderer.LineChartTest do
     assert length(texts) == 1
     assert hd(texts).children == ["Revenue"]
   end
+
+  test "renders negative values with points and polyline below the zero baseline" do
+    data = [
+      %{name: "Temperature", data: [%{label: "Jan", value: 10}, %{label: "Feb", value: -10}]}
+    ]
+
+    chart = LineChart.new!(data, width: 600, height: 400)
+    svg = Renderer.render(chart)
+
+    margin = Plotto.Theme.margin()
+    plot_height = 400 - margin.top - margin.bottom
+    zero_y = margin.top + Plotto.Axis.linear_scale(0, -10, 10, plot_height)
+
+    circles = Enum.filter(svg.children, &(&1.tag == "circle"))
+    assert length(circles) == 2
+    [pos_circle, neg_circle] = circles
+
+    pos_cy = elem(Float.parse(pos_circle.attrs["cy"]), 0)
+    neg_cy = elem(Float.parse(neg_circle.attrs["cy"]), 0)
+
+    # Positive point is above zero baseline (smaller y in SVG)
+    assert pos_cy < zero_y
+    # Negative point is below zero baseline (larger y in SVG)
+    assert neg_cy > zero_y
+    # In symmetric domain [-10, 10], distances from zero_y are equal
+    assert_in_delta zero_y - pos_cy, neg_cy - zero_y, 0.01
+  end
 end
