@@ -1,6 +1,6 @@
 data = [
   %{
-    name: "Sales",
+    name: "Revenue",
     data: [
       %{label: "Jan", value: 42},
       %{label: "Feb", value: 58},
@@ -11,19 +11,19 @@ data = [
     ]
   },
   %{
-    name: "Costs",
+    name: "Net Profit",
     data: [
-      %{label: "Jan", value: 20},
+      %{label: "Jan", value: 12},
       %{label: "Feb", value: 25},
-      %{label: "Mar", value: 18},
+      %{label: "Mar", value: -15},
       %{label: "Apr", value: 30},
-      %{label: "May", value: 28},
-      %{label: "Jun", value: 35}
+      %{label: "May", value: -8},
+      %{label: "Jun", value: 40}
     ]
   }
 ]
 
-chart = Plotto.BarChart.new!(data, title: "Monthly Sales vs Costs", legend: :top_right)
+chart = Plotto.BarChart.new!(data, title: "Monthly Performance", legend: :top_right)
 svg = Plotto.to_svg!(chart)
 png = Plotto.to_png!(chart)
 

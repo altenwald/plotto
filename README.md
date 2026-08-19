@@ -6,7 +6,7 @@ It is very useful when you are developing a website and need to integrate SVG ch
 
 If you need to export or generate PNG charts for email, PDF, or sending via Telegram, Slack, Mattermost, etc., `Plotto.to_png/1` renders the same chart to a PNG binary, anti-aliased and with full Unicode text support (including accented characters like á, é, ñ) via a bundled DejaVu Sans font.
 
-Charts can also show an optional title and a legend (one color swatch + name row per series), positioned in any of the four corners — see `:title` and `:legend` in `Plotto.BarChart` or `Plotto.LineChart`.
+Charts can also show an optional title and a legend (one color swatch + name row per series), positioned in any of the four corners — see `:title` and `:legend` in `Plotto.BarChart` or `Plotto.LineChart`. Negative values and mixed positive/negative domains are fully supported with an automatic zero baseline.
 
 ## Usage
 
@@ -25,12 +25,12 @@ png = Plotto.to_png!(chart)
 
 ## Examples
 
-[examples/bar_chart.exs](examples/bar_chart.exs) generates the chart below (`mix run examples/bar_chart.exs`), with two series ("Sales" and "Costs") grouped per month and a top-right legend:
+[examples/bar_chart.exs](examples/bar_chart.exs) generates the chart below (`mix run examples/bar_chart.exs`), with two series ("Revenue" and "Net Profit"), mixed positive/negative values with a zero baseline, and a top-right legend:
 
 ```elixir
 data = [
   %{
-    name: "Sales",
+    name: "Revenue",
     data: [
       %{label: "Jan", value: 42},
       %{label: "Feb", value: 58},
@@ -41,19 +41,19 @@ data = [
     ]
   },
   %{
-    name: "Costs",
+    name: "Net Profit",
     data: [
-      %{label: "Jan", value: 20},
+      %{label: "Jan", value: 12},
       %{label: "Feb", value: 25},
-      %{label: "Mar", value: 18},
+      %{label: "Mar", value: -15},
       %{label: "Apr", value: 30},
-      %{label: "May", value: 28},
-      %{label: "Jun", value: 35}
+      %{label: "May", value: -8},
+      %{label: "Jun", value: 40}
     ]
   }
 ]
 
-chart = Plotto.BarChart.new!(data, title: "Monthly Sales vs Costs", legend: :top_right)
+chart = Plotto.BarChart.new!(data, title: "Monthly Performance", legend: :top_right)
 svg = Plotto.to_svg!(chart)
 png = Plotto.to_png!(chart)
 
@@ -63,24 +63,74 @@ File.write!(Path.join(__DIR__, "bar_chart.png"), png)
 
 ![Bar chart example](examples/bar_chart.png)
 
-[examples/line_chart.exs](examples/line_chart.exs) generates the same data as a line chart (`mix run examples/line_chart.exs`), this time with a bottom-left legend:
+[examples/stacked_bar_chart.exs](examples/stacked_bar_chart.exs) generates a stacked bar chart (`mix run examples/stacked_bar_chart.exs` with `mode: :stacked`):
 
 ```elixir
 data = [
   %{
-    name: "Sales",
+    name: "Hardware",
     data: [
-      %{label: "Jan", value: 42},
-      %{label: "Feb", value: 58},
-      %{label: "Mar", value: 33},
-      %{label: "Apr", value: 71},
-      %{label: "May", value: 65},
-      %{label: "Jun", value: 90}
+      %{label: "Q1", value: 45},
+      %{label: "Q2", value: 50},
+      %{label: "Q3", value: 40},
+      %{label: "Q4", value: 65}
+    ]
+  },
+  %{
+    name: "Software",
+    data: [
+      %{label: "Q1", value: 30},
+      %{label: "Q2", value: 35},
+      %{label: "Q3", value: 45},
+      %{label: "Q4", value: 55}
+    ]
+  },
+  %{
+    name: "Services",
+    data: [
+      %{label: "Q1", value: 20},
+      %{label: "Q2", value: 25},
+      %{label: "Q3", value: 30},
+      %{label: "Q4", value: 40}
     ]
   }
 ]
 
-chart = Plotto.LineChart.new!(data, title: "Monthly Sales", legend: :bottom_left)
+chart =
+  Plotto.BarChart.new!(
+    data,
+    mode: :stacked,
+    title: "Quarterly Revenue Breakdown",
+    legend: :top_right
+  )
+
+svg = Plotto.to_svg!(chart)
+png = Plotto.to_png!(chart)
+
+File.write!(Path.join(__DIR__, "stacked_bar_chart.svg"), svg)
+File.write!(Path.join(__DIR__, "stacked_bar_chart.png"), png)
+```
+
+![Stacked bar chart example](examples/stacked_bar_chart.png)
+
+[examples/line_chart.exs](examples/line_chart.exs) generates a line chart with temperatures crossing negative values (`mix run examples/line_chart.exs`), with a bottom-left legend:
+
+```elixir
+data = [
+  %{
+    name: "Temperature",
+    data: [
+      %{label: "Jan", value: -5},
+      %{label: "Feb", value: -2},
+      %{label: "Mar", value: 8},
+      %{label: "Apr", value: 15},
+      %{label: "May", value: 22},
+      %{label: "Jun", value: 28}
+    ]
+  }
+]
+
+chart = Plotto.LineChart.new!(data, title: "Monthly Temperatures (°C)", legend: :bottom_left)
 svg = Plotto.to_svg!(chart)
 png = Plotto.to_png!(chart)
 
