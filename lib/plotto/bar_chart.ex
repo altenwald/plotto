@@ -60,7 +60,8 @@ defmodule Plotto.BarChart do
           height: pos_integer(),
           title: String.t() | nil,
           colors: [String.t()],
-          legend: :top_left | :top_right | :bottom_left | :bottom_right | nil
+          legend: :top_left | :top_right | :bottom_left | :bottom_right | nil,
+          mode: :grouped | :stacked
         }
 
   @type t :: %__MODULE__{data: [series()], opts: options()}
@@ -86,6 +87,9 @@ defmodule Plotto.BarChart do
     * `:legend` - optional legend position: `:top_left`, `:top_right`, `:bottom_left`,
       or `:bottom_right`. Renders one swatch+name row per series (using each series'
       `:name`), stacked vertically. Defaults to `nil` (no legend).
+    * `:mode` - bar chart layout mode: `:grouped` (bars per series side by side) or
+      `:stacked` (bars per series stacked vertically summing the total). Defaults to
+      `:grouped`.
 
   ## Examples
 

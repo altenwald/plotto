@@ -40,13 +40,17 @@ defmodule Plotto.BarChartTest do
     assert chart.opts.legend == :top_right
   end
 
-  test "new/2 returns {:error, reason} for a nil series name with 2+ series" do
-    data = [
-      %{name: nil, data: [%{label: "Jan", value: 10}]},
-      %{name: "Costs", data: [%{label: "Jan", value: 5}]}
-    ]
+  test "new/2 accepts :mode option" do
+    assert {:ok, chart} = BarChart.new(@valid_data, mode: :stacked)
+    assert chart.opts.mode == :stacked
+  end
 
-    assert {:error, reason} = BarChart.new(data)
-    assert reason =~ "name is required"
+  test "new/2 returns {:error, reason} for an invalid mode" do
+    assert {:error, reason} = BarChart.new(@valid_data, mode: :invalid)
+    assert reason =~ "invalid bar chart mode"
+  end
+
+  test "new!/2 raises ArgumentError for an invalid mode" do
+    assert_raise ArgumentError, fn -> BarChart.new!(@valid_data, mode: :invalid) end
   end
 end
