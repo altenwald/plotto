@@ -9,7 +9,6 @@ defmodule Plotto.Options do
       height: Keyword.get(opts, :height, Theme.default_height()),
       title: Keyword.get(opts, :title),
       colors: Keyword.get(opts, :colors, Theme.default_colors()),
-      name: Keyword.get(opts, :name),
       legend: Keyword.get(opts, :legend)
     }
   end

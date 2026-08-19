@@ -19,16 +19,19 @@ defmodule Plotto.OptionsTest do
     assert opts.colors == ["#000000"]
   end
 
-  test "fills in :name and :legend as nil by default" do
+  test "fills in :legend as nil by default" do
     opts = Options.build([])
-    assert opts.name == nil
     assert opts.legend == nil
   end
 
-  test "overrides :name and :legend when given" do
-    opts = Options.build(name: "Sales", legend: :top_right)
-    assert opts.name == "Sales"
+  test "overrides :legend when given" do
+    opts = Options.build(legend: :top_right)
     assert opts.legend == :top_right
+  end
+
+  test "does not include a :name field" do
+    opts = Options.build(name: "Sales")
+    refute Map.has_key?(opts, :name)
   end
 
   test "validate/1 returns :ok when :legend is absent" do
