@@ -48,4 +48,24 @@ defmodule Plotto.OptionsTest do
     assert Options.validate(legend: :middle) ==
              {:error, "invalid legend position, got: :middle"}
   end
+
+  test "fills in :mode as :grouped by default" do
+    opts = Options.build([])
+    assert opts.mode == :grouped
+  end
+
+  test "overrides :mode when given" do
+    opts = Options.build(mode: :stacked)
+    assert opts.mode == :stacked
+  end
+
+  test "validate/1 returns :ok for valid modes" do
+    assert Options.validate(mode: :grouped) == :ok
+    assert Options.validate(mode: :stacked) == :ok
+  end
+
+  test "validate/1 returns {:error, reason} for an invalid mode" do
+    assert Options.validate(mode: :invalid) ==
+             {:error, "invalid bar chart mode, got: :invalid"}
+  end
 end
