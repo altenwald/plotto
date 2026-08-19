@@ -28,7 +28,7 @@ Run `mix test` once now to confirm today's baseline: `14 doctests, 151 tests, 0 
 - Modify: `lib/plotto/data.ex` (full rewrite)
 - Test: `test/plotto/data_test.exs` (full rewrite)
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Replace the entire contents of `test/plotto/data_test.exs`:
 
@@ -135,12 +135,12 @@ defmodule Plotto.DataTest do
 end
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `mix test test/plotto/data_test.exs`
 Expected: FAIL — the current `Data.validate/1` validates the old flat shape, so most of these new tests either error out (trying to treat a series map as a data item) or don't get the new error messages.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 Replace the entire contents of `lib/plotto/data.ex`:
 
@@ -228,12 +228,12 @@ defmodule Plotto.Data do
 end
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `mix test test/plotto/data_test.exs`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add lib/plotto/data.ex test/plotto/data_test.exs
@@ -248,7 +248,7 @@ git commit -m "Rewrite Plotto.Data.validate/1 for multi-series data"
 - Modify: `lib/plotto/options.ex`
 - Test: `test/plotto/options_test.exs`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Replace the entire contents of `test/plotto/options_test.exs`:
 
@@ -306,12 +306,12 @@ defmodule Plotto.OptionsTest do
 end
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `mix test test/plotto/options_test.exs`
 Expected: FAIL only for "does not include a :name field" (current `build/1` still sets `:name`).
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 Replace the entire contents of `lib/plotto/options.ex`:
 
@@ -347,12 +347,12 @@ defmodule Plotto.Options do
 end
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `mix test test/plotto/options_test.exs`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add lib/plotto/options.ex test/plotto/options_test.exs
@@ -371,7 +371,7 @@ git commit -m "Remove chart-level :name option from Plotto.Options"
 
 This task updates typespecs, moduledocs, and doctests for the new `[%{name:, data:}]` shape. It does **not** touch the renderers (Tasks 5-6) — so `doctest Plotto` (in `lib/plotto.ex`, which calls `Plotto.to_svg/1`/`Plotto.to_png/1`) will still FAIL after this task, since the renderers don't understand the new struct shape yet. Only verify `test/plotto/bar_chart_test.exs` and `test/plotto/line_chart_test.exs` pass at this checkpoint — defer full doctest verification (including `doctest Plotto`) to Task 7.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Replace the entire contents of `test/plotto/bar_chart_test.exs`:
 
@@ -472,12 +472,12 @@ defmodule Plotto.LineChartTest do
 end
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `mix test test/plotto/bar_chart_test.exs test/plotto/line_chart_test.exs`
 Expected: FAIL — `Options` no longer has `:name`, so `chart.opts.name` references would error, and current struct doctests reference the old shape (these test files don't reference `.name` anymore, so most failures here come from `Data.validate/1` behavior already changing in Task 1 — the "returns {:ok, chart}" tests should already pass from Task 1's work; the `:legend`-only tests should already pass too. The new "nil series name with 2+ series" test is the one guaranteed to fail before this task's `BarChart`/`LineChart` code changes, though those modules don't need code changes themselves — only doc/typespec changes. If everything already passes at Step 2, that's fine; proceed to Step 3 for the doc/typespec updates regardless, since those are this task's actual deliverable).
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 Replace the entire contents of `lib/plotto/bar_chart.ex`:
 
@@ -779,14 +779,14 @@ stale otherwise):
 chart = Plotto.BarChart.new!([%{name: "Sales", data: [%{label: "Jan", value: 10}]}], title: "Sales")
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `mix test test/plotto/bar_chart_test.exs test/plotto/line_chart_test.exs`
 Expected: PASS
 
 Do **not** run the full suite or `test/plotto_test.exs` expecting green yet — see this task's intro note. `doctest Plotto`'s examples all construct `Plotto.BarChart` charts, so that specific doctest group will pass once Task 5 (BarChart renderer) lands; `doctest Plotto.LineChart`'s own examples don't call `Plotto.to_svg/1` so they're unaffected either way. `test/plotto/svg/renderer_test.exs` and `test/plotto_test.exs`'s own (non-doctest) tests are untouched until Task 7 and will still fail.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add lib/plotto/bar_chart.ex lib/plotto/line_chart.ex lib/plotto.ex \
@@ -809,7 +809,7 @@ pair, and both derive "how many rows will actually draw" via one shared private
 helper (`drawable_entries/2`) so they can never disagree — this is the fix for
 the "reserved but empty" bug class the spec calls out.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 In `test/plotto/svg/renderer/shared_test.exs`, replace the `describe "effective_margin/3"` and `describe "legend_elements/6"` blocks (the `svg_root/3`, `title_elements/2`, and `axis_elements/5` tests above them are unchanged, keep them as-is) with:
 
@@ -931,12 +931,12 @@ In `test/plotto/svg/renderer/shared_test.exs`, replace the `describe "effective_
   end
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `mix test test/plotto/svg/renderer/shared_test.exs`
 Expected: FAIL — `effective_margin/3`'s third argument is currently a single `name`, not a list, so these calls pass the wrong shape; `legend_elements/5` doesn't exist yet (current arity is 6, with a different signature).
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 In `lib/plotto/svg/renderer/shared.ex`, replace lines 110-193 (from `def effective_margin` through the end of `defp draws_legend?/2`, i.e. everything after `format_tick/1` and before the module's final `end`):
 
@@ -1046,12 +1046,12 @@ In `lib/plotto/svg/renderer/shared.ex`, replace lines 110-193 (from `def effecti
   end
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `mix test test/plotto/svg/renderer/shared_test.exs`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add lib/plotto/svg/renderer/shared.ex test/plotto/svg/renderer/shared_test.exs
@@ -1066,7 +1066,7 @@ git commit -m "Replace single-entry legend with multi-entry list-based contract 
 - Modify: `lib/plotto/svg/renderer/bar_chart.ex` (full rewrite)
 - Test: `test/plotto/svg/renderer/bar_chart_test.exs` (full rewrite)
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Replace the entire contents of `test/plotto/svg/renderer/bar_chart_test.exs`:
 
@@ -1281,12 +1281,12 @@ defmodule Plotto.SVG.Renderer.BarChartTest do
 end
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `mix test test/plotto/svg/renderer/bar_chart_test.exs`
 Expected: FAIL — the current renderer expects flat `data`, not a list of series.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 Replace the entire contents of `lib/plotto/svg/renderer/bar_chart.ex`:
 
@@ -1359,12 +1359,12 @@ end
 
 Note: for `n_series = 1`, `sub_width == band.band_width * 0.8` and `bar_x == inner_x` — identical to today's single-series geometry, so single-series bar *positions* are pixel-identical to before (only the *color* changes, per Task 3's design).
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `mix test test/plotto/svg/renderer/bar_chart_test.exs`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add lib/plotto/svg/renderer/bar_chart.ex test/plotto/svg/renderer/bar_chart_test.exs
@@ -1379,7 +1379,7 @@ git commit -m "Render grouped multi-series bars, colored per series, in Plotto.S
 - Modify: `lib/plotto/svg/renderer/line_chart.ex:8-45` (the `render/1` function body)
 - Test: `test/plotto/svg/renderer/line_chart_test.exs` (full rewrite)
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Replace the entire contents of `test/plotto/svg/renderer/line_chart_test.exs`:
 
@@ -1504,12 +1504,12 @@ defmodule Plotto.SVG.Renderer.LineChartTest do
 end
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `mix test test/plotto/svg/renderer/line_chart_test.exs`
 Expected: FAIL — the current renderer expects flat `data`, not a list of series.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 Replace `lib/plotto/svg/renderer/line_chart.ex:8-45` (the whole `render/1` function; leave `build_polyline/2`, `fmt/1`, and `build_point_circle/2` below it unchanged):
 
@@ -1549,12 +1549,12 @@ Replace `lib/plotto/svg/renderer/line_chart.ex:8-45` (the whole `render/1` funct
   end
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `mix test test/plotto/svg/renderer/line_chart_test.exs`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add lib/plotto/svg/renderer/line_chart.ex test/plotto/svg/renderer/line_chart_test.exs
@@ -1606,7 +1606,7 @@ to:
     chart = LineChart.new!([%{name: "Trend", data: [%{label: "Jan", value: 10}]}])
 ```
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Replace the entire contents of `test/plotto_test.exs`:
 
@@ -1794,22 +1794,22 @@ defmodule PlottoTest do
 end
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `mix test test/plotto_test.exs`
 Expected: at this point, given Tasks 1-6 and this task's Step 0 (`renderer_test.exs`) are already done, this should mostly PASS already — this task is primarily about catching any remaining old-shape references and adding the new multi-series coverage. If something fails unexpectedly here, first check whether it's a real gap in Tasks 1-6's logic, or another old-flat-shape reference lurking in a test file the plan didn't anticipate (as `renderer_test.exs` turned out to be) — run `grep -rn "label:.*value:" test/` and check every hit uses the new `%{name:, data: [...]}` shape before assuming the renderer/validation code itself is wrong.
 
-- [ ] **Step 3: Run tests to verify they pass**
+- [x] **Step 3: Run tests to verify they pass**
 
 Run: `mix test test/plotto_test.exs`
 Expected: PASS
 
-- [ ] **Step 4: Run the full suite**
+- [x] **Step 4: Run the full suite**
 
 Run: `mix test`
 Expected: PASS, all green — this is the first point in the plan where the whole suite should be green again.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add test/plotto_test.exs test/plotto/svg/renderer_test.exs
@@ -1825,7 +1825,7 @@ git commit -m "Rewrite end-to-end tests for multi-series data"
 - Modify: `examples/line_chart.exs` (single series, new shape — Phase 2 will make this multi-series)
 - Regenerate: `examples/bar_chart.svg`, `examples/bar_chart.png`, `examples/line_chart.svg`, `examples/line_chart.png`
 
-- [ ] **Step 1: Update `examples/bar_chart.exs`**
+- [x] **Step 1: Update `examples/bar_chart.exs`**
 
 Replace its entire contents:
 
@@ -1863,7 +1863,7 @@ File.write!(Path.join(__DIR__, "bar_chart.svg"), svg)
 File.write!(Path.join(__DIR__, "bar_chart.png"), png)
 ```
 
-- [ ] **Step 2: Update `examples/line_chart.exs`**
+- [x] **Step 2: Update `examples/line_chart.exs`**
 
 Replace its entire contents:
 
@@ -1890,18 +1890,18 @@ File.write!(Path.join(__DIR__, "line_chart.svg"), svg)
 File.write!(Path.join(__DIR__, "line_chart.png"), png)
 ```
 
-- [ ] **Step 3: Regenerate the output files**
+- [x] **Step 3: Regenerate the output files**
 
 Run: `mix run examples/bar_chart.exs && mix run examples/line_chart.exs`
 Expected: no errors; all four output files rewritten.
 
-- [ ] **Step 4: Visually spot-check both outputs**
+- [x] **Step 4: Visually spot-check both outputs**
 
 Open `examples/bar_chart.png` and confirm: two bars per month (Sales and Costs, side by side with no gap between them, different colors), a legend in the top-right with two rows ("Sales", "Costs"), no overlap with the title.
 
 Open `examples/line_chart.png` and confirm it looks the same as before (single line, legend bottom-left) — this example didn't change behaviorally, only its data shape.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add examples/bar_chart.exs examples/bar_chart.svg examples/bar_chart.png \
@@ -1916,7 +1916,7 @@ git commit -m "Update examples for multi-series bar chart data shape"
 **Files:**
 - Modify: `README.md`
 
-- [ ] **Step 1: Update the intro and Usage section**
+- [x] **Step 1: Update the intro and Usage section**
 
 In `README.md`, replace the paragraph mentioning `:title`, `:name`, and `:legend`:
 
@@ -1937,7 +1937,7 @@ svg = Plotto.to_svg!(chart)
 png = Plotto.to_png!(chart)
 ```
 
-- [ ] **Step 2: Update the `## Examples` section**
+- [x] **Step 2: Update the `## Examples` section**
 
 Replace the bar chart code block with `examples/bar_chart.exs`'s new multi-series content (from Task 8, Step 1), and update its intro sentence to mention two series:
 
@@ -1970,12 +1970,12 @@ File.write!(Path.join(__DIR__, "line_chart.svg"), svg)
 File.write!(Path.join(__DIR__, "line_chart.png"), png)
 ```
 
-- [ ] **Step 3: Verify ExDoc still builds cleanly**
+- [x] **Step 3: Verify ExDoc still builds cleanly**
 
 Run: `mix docs`
 Expected: succeeds with no warnings.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add README.md
@@ -1988,17 +1988,17 @@ git commit -m "Update README for multi-series bar chart data shape"
 
 **Files:** none (verification only)
 
-- [ ] **Step 1: Run the full test suite**
+- [x] **Step 1: Run the full test suite**
 
 Run: `mix test`
 Expected: PASS, all tests green.
 
-- [ ] **Step 2: Run the formatter check**
+- [x] **Step 2: Run the formatter check**
 
 Run: `mix format --check-formatted`
 Expected: no output. If it reports unformatted files, run `mix format` and re-check.
 
-- [ ] **Step 3: Commit formatting fixes if any were needed**
+- [x] **Step 3: Commit formatting fixes if any were needed**
 
 ```bash
 git add -u
@@ -2007,7 +2007,7 @@ git commit -m "Apply mix format"
 
 (Skip this step entirely if Step 2 reported nothing to format.)
 
-- [ ] **Step 4: Run `mix docs` one more time**
+- [x] **Step 4: Run `mix docs` one more time**
 
 Run: `mix docs`
 Expected: succeeds with no warnings.
