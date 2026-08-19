@@ -55,7 +55,9 @@ defmodule Plotto.SVG.Renderer.BarChart do
 
       series.data
       |> Enum.zip(bands)
-      |> Enum.map(&build_grouped_bar(&1, margin, plot_height, max_value, color, series_index, n_series))
+      |> Enum.map(
+        &build_grouped_bar(&1, margin, plot_height, max_value, color, series_index, n_series)
+      )
     end)
   end
 

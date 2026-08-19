@@ -191,7 +191,8 @@ defmodule PlottoTest do
         %{name: "Costs", data: [%{label: "Jan", value: 20}, %{label: "Feb", value: 30}]}
       ]
 
-      chart = BarChart.new!(data, mode: :stacked, title: "Stacked Sales vs Costs", legend: :top_left)
+      chart =
+        BarChart.new!(data, mode: :stacked, title: "Stacked Sales vs Costs", legend: :top_left)
 
       assert {:ok, svg} = Plotto.to_svg(chart)
       assert svg =~ "<rect"
