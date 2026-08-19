@@ -202,5 +202,27 @@ defmodule PlottoTest do
       assert {:ok, png} = Plotto.to_png(chart)
       assert binary_part(png, 0, 8) == @png_signature
     end
+
+    test "a chart with negative and mixed values renders SVG and PNG end-to-end" do
+      bar_data = [
+        %{name: "Profit", data: [%{label: "Jan", value: 50}, %{label: "Feb", value: -20}]}
+      ]
+
+      bar_chart = BarChart.new!(bar_data, title: "Profit/Loss")
+      assert {:ok, bar_svg} = Plotto.to_svg(bar_chart)
+      assert bar_svg =~ "<rect"
+      assert {:ok, bar_png} = Plotto.to_png(bar_chart)
+      assert binary_part(bar_png, 0, 8) == @png_signature
+
+      line_data = [
+        %{name: "Temperature", data: [%{label: "Jan", value: -5}, %{label: "Feb", value: 15}]}
+      ]
+
+      line_chart = LineChart.new!(line_data, title: "Temperature")
+      assert {:ok, line_svg} = Plotto.to_svg(line_chart)
+      assert line_svg =~ "<polyline"
+      assert {:ok, line_png} = Plotto.to_png(line_chart)
+      assert binary_part(line_png, 0, 8) == @png_signature
+    end
   end
 end

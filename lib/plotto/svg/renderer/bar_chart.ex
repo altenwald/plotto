@@ -89,7 +89,8 @@ defmodule Plotto.SVG.Renderer.BarChart do
       {segments, _pos, _neg} =
         data
         |> Enum.with_index()
-        |> Enum.reduce({[], 0, 0}, fn {series, series_index}, {acc_segments, pos_base, neg_base} ->
+        |> Enum.reduce({[], 0, 0}, fn {series, series_index},
+                                      {acc_segments, pos_base, neg_base} ->
           item = Enum.at(series.data, cat_index)
           color = Theme.color(colors, series_index)
 
