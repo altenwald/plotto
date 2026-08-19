@@ -41,6 +41,12 @@ defmodule Plotto.SVG.Renderer.Shared do
   end
 
   def axis_elements(bands, margin, plot_width, plot_height, max_value) do
+    axis_elements(bands, margin, plot_width, plot_height, 0, max_value)
+  end
+
+  def axis_elements(bands, margin, plot_width, plot_height, min_value, max_value) do
+    zero_y = margin.top + Axis.linear_scale(0, min_value, max_value, plot_height)
+
     y_axis_line =
       Element.new("line", %{
         "x1" => margin.left,
@@ -53,14 +59,19 @@ defmodule Plotto.SVG.Renderer.Shared do
     x_axis_line =
       Element.new("line", %{
         "x1" => margin.left,
-        "y1" => margin.top + plot_height,
+        "y1" => zero_y,
         "x2" => margin.left + plot_width,
-        "y2" => margin.top + plot_height,
+        "y2" => zero_y,
         "stroke" => Theme.axis_color()
       })
 
     x_labels = Enum.map(bands, &x_label(&1, margin, plot_height))
-    y_labels = Enum.map(Axis.ticks(max_value), &y_label(&1, margin, plot_height, max_value))
+
+    y_labels =
+      Enum.map(
+        Axis.ticks(min_value, max_value),
+        &y_label(&1, margin, plot_height, min_value, max_value)
+      )
 
     [y_axis_line, x_axis_line] ++ x_labels ++ y_labels
   end
@@ -79,8 +90,8 @@ defmodule Plotto.SVG.Renderer.Shared do
     )
   end
 
-  defp y_label(tick, margin, plot_height, max_value) do
-    y = margin.top + Axis.linear_scale(tick, max_value, plot_height)
+  defp y_label(tick, margin, plot_height, min_value, max_value) do
+    y = margin.top + Axis.linear_scale(tick, min_value, max_value, plot_height)
 
     Element.new(
       "text",

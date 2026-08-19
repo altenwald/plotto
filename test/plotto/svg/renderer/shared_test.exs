@@ -59,6 +59,29 @@ defmodule Plotto.SVG.Renderer.SharedTest do
     refute "30.00" in tick_labels
   end
 
+  test "axis_elements/6 draws the horizontal baseline at the zero Y position and ticks spanning negative to positive" do
+    bands = Plotto.Axis.categorical_scale(["Jan"], 100)
+    margin = Plotto.Theme.margin()
+
+    # Domain [-50, 50], plot_height = 200. Zero is at y = margin.top + 100
+    elements = Shared.axis_elements(bands, margin, 100, 200, -50, 50)
+    lines = Enum.filter(elements, &(&1.tag == "line"))
+
+    # Horizontal baseline is the second line (y1 == y2)
+    [_, x_axis_line] = lines
+    expected_zero_y = margin.top + 100.0
+    assert elem(Float.parse(x_axis_line.attrs["y1"]), 0) == expected_zero_y
+    assert elem(Float.parse(x_axis_line.attrs["y2"]), 0) == expected_zero_y
+
+    tick_labels =
+      elements
+      |> Enum.filter(&(&1.tag == "text"))
+      |> Enum.map(fn %{children: [text]} -> text end)
+
+    assert "-50" in tick_labels
+    assert "50" in tick_labels
+  end
+
   describe "effective_margin/3" do
     @margin Plotto.Theme.margin()
     @row_height Plotto.Theme.legend_row_height()

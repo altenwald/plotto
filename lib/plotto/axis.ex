@@ -24,10 +24,6 @@ defmodule Plotto.Axis do
     plot_height - (value - min_value) / (max_value - min_value) * plot_height
   end
 
-  def ticks(max_value, count) when is_number(max_value) and is_integer(count) do
-    ticks(0, max_value, count)
-  end
-
   def ticks(max_value) when is_number(max_value) do
     ticks(0, max_value, 5)
   end
