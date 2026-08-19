@@ -7,49 +7,48 @@ defmodule PlottoTest do
 
   alias Plotto.{BarChart, LineChart}
 
+  @single_series [%{name: "Sales", data: [%{label: "Jan", value: 10}, %{label: "Feb", value: 25}]}]
+
   test "to_svg/1 returns {:ok, svg_string} for a bar chart" do
-    chart = BarChart.new!([%{label: "Jan", value: 10}, %{label: "Feb", value: 25}])
+    chart = BarChart.new!(@single_series)
     assert {:ok, svg} = Plotto.to_svg(chart)
     assert String.starts_with?(svg, "<svg")
     assert svg =~ "<rect"
   end
 
   test "to_svg!/1 returns the svg string directly for a line chart" do
-    chart = LineChart.new!([%{label: "Jan", value: 10}, %{label: "Feb", value: 25}])
+    chart = LineChart.new!(@single_series)
     svg = Plotto.to_svg!(chart)
     assert String.starts_with?(svg, "<svg")
     assert svg =~ "<polyline"
   end
 
   test "per-item attrs pass through end to end into the SVG output" do
-    chart =
-      BarChart.new!([%{label: "Jan", value: 10, attrs: %{"phx-click" => "select"}}])
+    data = [%{name: "Sales", data: [%{label: "Jan", value: 10, attrs: %{"phx-click" => "select"}}]}]
+    chart = BarChart.new!(data)
 
     svg = Plotto.to_svg!(chart)
     assert svg =~ ~s(phx-click="select")
   end
 
   test "labels with special characters are escaped end to end" do
-    chart = BarChart.new!([%{label: "<script>", value: 10}])
+    data = [%{name: "Sales", data: [%{label: "<script>", value: 10}]}]
+    chart = BarChart.new!(data)
     svg = Plotto.to_svg!(chart)
     refute svg =~ "<script>"
     assert svg =~ "&lt;script&gt;"
   end
 
-  test "a bar chart with a legend renders the swatch and name end to end in SVG" do
-    chart =
-      BarChart.new!([%{label: "Jan", value: 10}, %{label: "Feb", value: 25}],
-        name: "Sales",
-        legend: :top_right
-      )
+  test "a bar chart with a legend renders the series name end to end in SVG" do
+    chart = BarChart.new!(@single_series, legend: :top_right)
 
     svg = Plotto.to_svg!(chart)
     assert svg =~ "Sales"
   end
 
-  test "bar colors cycle through the palette end to end for 3+ items" do
-    colors = Plotto.Theme.default_colors()
-    data = for i <- 0..6, do: %{label: "Item#{i}", value: i + 1}
+  test "all bars in a single-series chart share one color end to end" do
+    data = [%{name: "Sales", data: for(i <- 0..6, do: %{label: "Item#{i}", value: i + 1})}]
+
     chart = BarChart.new!(data)
     svg = Plotto.to_svg!(chart)
 
@@ -57,30 +56,30 @@ defmodule PlottoTest do
       Regex.scan(~r/<rect fill="(#[0-9A-Fa-f]{6})"/, svg)
       |> Enum.map(fn [_, fill] -> fill end)
 
-    expected = Enum.map(0..6, &Enum.at(colors, rem(&1, length(colors))))
-
-    assert fills == expected
-    # 7 items over a 5-color palette: item index 5 wraps back to item index 0's color.
-    assert Enum.at(fills, 5) == Enum.at(fills, 0)
+    assert Enum.uniq(fills) == [Plotto.Theme.color(Plotto.Theme.default_colors(), 0)]
   end
 
-  test "custom :colors, :width, and :height thread through new!/2 into the rendered SVG" do
-    chart =
-      BarChart.new!(
-        [%{label: "Jan", value: 10}, %{label: "Feb", value: 25}],
-        width: 800,
-        height: 500,
-        colors: ["#111111", "#222222"]
-      )
+  test "each series gets a distinct color end to end for a multi-series bar chart" do
+    data = [
+      %{name: "Sales", data: [%{label: "Jan", value: 10}, %{label: "Feb", value: 25}]},
+      %{name: "Costs", data: [%{label: "Jan", value: 5}, %{label: "Feb", value: 8}]}
+    ]
+
+    chart = BarChart.new!(data, colors: ["#111111", "#222222"])
+    svg = Plotto.to_svg!(chart)
+
+    assert svg =~ "#111111"
+    assert svg =~ "#222222"
+  end
+
+  test "custom :width and :height thread through new!/2 into the rendered SVG" do
+    chart = BarChart.new!(@single_series, width: 800, height: 500)
 
     svg = Plotto.to_svg!(chart)
 
     assert svg =~ ~s(width="800")
     assert svg =~ ~s(height="500")
     assert svg =~ ~s(viewBox="0 0 800 500")
-    assert svg =~ "#111111"
-    assert svg =~ "#222222"
-    refute svg =~ "#4E79A7"
   end
 
   test "to_svg/1 returns {:error, reason} for a value that isn't a supported chart" do
@@ -96,11 +95,7 @@ defmodule PlottoTest do
     @png_signature <<137, 80, 78, 71, 13, 10, 26, 10>>
 
     test "to_png/1 returns {:ok, png_binary} for a bar chart, at final (non-supersampled) dimensions" do
-      chart =
-        BarChart.new!([%{label: "Jan", value: 10}, %{label: "Feb", value: 25}],
-          width: 100,
-          height: 80
-        )
+      chart = BarChart.new!(@single_series, width: 100, height: 80)
 
       assert {:ok, png} = Plotto.to_png(chart)
 
@@ -111,7 +106,7 @@ defmodule PlottoTest do
     end
 
     test "to_png!/1 returns the png binary directly for a line chart" do
-      chart = LineChart.new!([%{label: "Jan", value: 10}, %{label: "Feb", value: 25}])
+      chart = LineChart.new!(@single_series)
       png = Plotto.to_png!(chart)
 
       assert binary_part(png, 0, 8) == @png_signature
@@ -128,15 +123,22 @@ defmodule PlottoTest do
   end
 
   describe "to_png!/1 end-to-end" do
-    test "a bar chart with a title, custom colors, and 3+ items renders without error" do
+    @png_signature <<137, 80, 78, 71, 13, 10, 26, 10>>
+
+    test "a bar chart with a title and custom colors renders without error" do
       data = [
-        %{label: "Jan", value: 10},
-        %{label: "Feb", value: 25},
-        %{label: "Mar", value: 18},
-        %{label: "Apr", value: 30}
+        %{
+          name: "Sales",
+          data: [
+            %{label: "Jan", value: 10},
+            %{label: "Feb", value: 25},
+            %{label: "Mar", value: 18},
+            %{label: "Apr", value: 30}
+          ]
+        }
       ]
 
-      chart = BarChart.new!(data, title: "Sales", colors: ["#4E79A7", "#F28E2B"])
+      chart = BarChart.new!(data, title: "Sales", colors: ["#4E79A7"])
       png = Plotto.to_png!(chart)
 
       assert byte_size(png) > 0
@@ -144,7 +146,7 @@ defmodule PlottoTest do
     end
 
     test "a chart with a label containing accented characters renders without error" do
-      data = [%{label: "Niño", value: 10}, %{label: "café", value: 15}]
+      data = [%{name: "Sales", data: [%{label: "Niño", value: 10}, %{label: "café", value: 15}]}]
       chart = BarChart.new!(data, title: "Tendencias")
 
       png = Plotto.to_png!(chart)
@@ -152,24 +154,29 @@ defmodule PlottoTest do
     end
 
     test "a bar chart with a legend renders without error" do
-      chart =
-        BarChart.new!([%{label: "Jan", value: 10}, %{label: "Feb", value: 25}],
-          name: "Sales",
-          legend: :bottom_left
-        )
+      chart = BarChart.new!(@single_series, legend: :bottom_left)
 
       png = Plotto.to_png!(chart)
       assert binary_part(png, 0, 8) == @png_signature
     end
 
     test "a line chart with a legend renders without error" do
-      chart =
-        LineChart.new!([%{label: "Jan", value: 10}, %{label: "Feb", value: 25}],
-          name: "Revenue",
-          legend: :top_left
-        )
+      data = [%{name: "Revenue", data: [%{label: "Jan", value: 10}, %{label: "Feb", value: 25}]}]
+      chart = LineChart.new!(data, legend: :top_left)
 
       png = Plotto.to_png!(chart)
+      assert binary_part(png, 0, 8) == @png_signature
+    end
+
+    test "a multi-series bar chart with a legend renders without error" do
+      data = [
+        %{name: "Sales", data: [%{label: "Jan", value: 10}, %{label: "Feb", value: 25}]},
+        %{name: "Costs", data: [%{label: "Jan", value: 5}, %{label: "Feb", value: 8}]}
+      ]
+
+      chart = BarChart.new!(data, title: "Sales vs Costs", legend: :top_right)
+      png = Plotto.to_png!(chart)
+
       assert binary_part(png, 0, 8) == @png_signature
     end
   end
