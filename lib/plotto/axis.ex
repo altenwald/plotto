@@ -12,17 +12,34 @@ defmodule Plotto.Axis do
     end)
   end
 
-  def linear_scale(_value, 0, plot_height), do: plot_height / 1
-
   def linear_scale(value, max_value, plot_height) do
-    plot_height - value / max_value * plot_height
+    linear_scale(value, 0, max_value, plot_height)
   end
 
-  def ticks(max_value, count \\ 5)
-  def ticks(0, _count), do: [0]
+  def linear_scale(_value, min_value, max_value, plot_height) when min_value == max_value do
+    plot_height / 1
+  end
 
-  def ticks(max_value, count) do
-    step = max_value / count
-    for i <- 0..count, do: i * step
+  def linear_scale(value, min_value, max_value, plot_height) do
+    plot_height - (value - min_value) / (max_value - min_value) * plot_height
+  end
+
+  def ticks(max_value, count) when is_number(max_value) and is_integer(count) do
+    ticks(0, max_value, count)
+  end
+
+  def ticks(max_value) when is_number(max_value) do
+    ticks(0, max_value, 5)
+  end
+
+  def ticks(min_value, max_value, count \\ 5)
+
+  def ticks(min_value, max_value, _count) when min_value == max_value do
+    [min_value]
+  end
+
+  def ticks(min_value, max_value, count) do
+    step = (max_value - min_value) / count
+    for i <- 0..count, do: min_value + i * step
   end
 end

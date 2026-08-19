@@ -36,17 +36,32 @@ defmodule Plotto.AxisTest do
     end
   end
 
-  describe "ticks/2" do
-    test "generates count + 1 evenly spaced ticks from 0 to max_value" do
-      assert Axis.ticks(100, 5) == [0.0, 20.0, 40.0, 60.0, 80.0, 100.0]
+  describe "linear_scale/4" do
+    test "maps min_value to the bottom of the plot area" do
+      assert Axis.linear_scale(-50, -50, 100, 300) == 300.0
     end
 
-    test "defaults to 5 divisions" do
-      assert Axis.ticks(10) == [0.0, 2.0, 4.0, 6.0, 8.0, 10.0]
+    test "maps max_value to the top of the plot area" do
+      assert Axis.linear_scale(100, -50, 100, 300) == 0.0
     end
 
-    test "returns [0] when max_value is 0" do
-      assert Axis.ticks(0) == [0]
+    test "maps 0 to the proportional baseline between min and max" do
+      # Domain [-50, 100] is length 150. 0 is 50 above -50 (1/3 from bottom, so 2/3 from top)
+      assert Axis.linear_scale(0, -50, 100, 300) == 200.0
+    end
+
+    test "returns bottom of plot area when min_value equals max_value" do
+      assert Axis.linear_scale(0, 0, 0, 200) == 200.0
+    end
+  end
+
+  describe "ticks/3" do
+    test "generates evenly spaced ticks spanning negative to positive domain" do
+      assert Axis.ticks(-50, 50, 5) == [-50.0, -30.0, -10.0, 10.0, 30.0, 50.0]
+    end
+
+    test "returns [min_value] when min_value equals max_value" do
+      assert Axis.ticks(-10, -10, 5) == [-10]
     end
   end
 end
