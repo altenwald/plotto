@@ -6,12 +6,17 @@ It is very useful when you are developing a website and need to integrate SVG ch
 
 If you need to export or generate PNG charts for email, PDF, or sending via Telegram, Slack, Mattermost, etc., `Plotto.to_png/1` renders the same chart to a PNG binary, anti-aliased and with full Unicode text support (including accented characters like á, é, ñ) via a bundled DejaVu Sans font.
 
-Charts can also show an optional title and a single-entry legend (a color swatch plus a series name), positioned in any of the four corners — see `:title`, `:name`, and `:legend` in `Plotto.BarChart` or `Plotto.LineChart`.
+Charts can also show an optional title and a legend (one color swatch + name row per series), positioned in any of the four corners — see `:title` and `:legend` in `Plotto.BarChart` or `Plotto.LineChart`.
 
 ## Usage
 
 ```elixir
-chart = Plotto.BarChart.new!([%{label: "Jan", value: 10}, %{label: "Feb", value: 25}], title: "Sales")
+chart =
+  Plotto.BarChart.new!(
+    [%{name: "Sales", data: [%{label: "Jan", value: 10}, %{label: "Feb", value: 25}]}],
+    title: "Sales"
+  )
+
 svg = Plotto.to_svg!(chart)
 png = Plotto.to_png!(chart)
 ```
@@ -20,19 +25,35 @@ png = Plotto.to_png!(chart)
 
 ## Examples
 
-[examples/bar_chart.exs](examples/bar_chart.exs) generates the chart below (`mix run examples/bar_chart.exs`), including a title and a top-right legend:
+[examples/bar_chart.exs](examples/bar_chart.exs) generates the chart below (`mix run examples/bar_chart.exs`), with two series ("Sales" and "Costs") grouped per month and a top-right legend:
 
 ```elixir
 data = [
-  %{label: "Jan", value: 42},
-  %{label: "Feb", value: 58},
-  %{label: "Mar", value: 33},
-  %{label: "Apr", value: 71},
-  %{label: "May", value: 65},
-  %{label: "Jun", value: 90}
+  %{
+    name: "Sales",
+    data: [
+      %{label: "Jan", value: 42},
+      %{label: "Feb", value: 58},
+      %{label: "Mar", value: 33},
+      %{label: "Apr", value: 71},
+      %{label: "May", value: 65},
+      %{label: "Jun", value: 90}
+    ]
+  },
+  %{
+    name: "Costs",
+    data: [
+      %{label: "Jan", value: 20},
+      %{label: "Feb", value: 25},
+      %{label: "Mar", value: 18},
+      %{label: "Apr", value: 30},
+      %{label: "May", value: 28},
+      %{label: "Jun", value: 35}
+    ]
+  }
 ]
 
-chart = Plotto.BarChart.new!(data, title: "Monthly Sales", name: "Sales", legend: :top_right)
+chart = Plotto.BarChart.new!(data, title: "Monthly Sales vs Costs", legend: :top_right)
 svg = Plotto.to_svg!(chart)
 png = Plotto.to_png!(chart)
 
@@ -45,7 +66,21 @@ File.write!(Path.join(__DIR__, "bar_chart.png"), png)
 [examples/line_chart.exs](examples/line_chart.exs) generates the same data as a line chart (`mix run examples/line_chart.exs`), this time with a bottom-left legend:
 
 ```elixir
-chart = Plotto.LineChart.new!(data, title: "Monthly Sales", name: "Sales", legend: :bottom_left)
+data = [
+  %{
+    name: "Sales",
+    data: [
+      %{label: "Jan", value: 42},
+      %{label: "Feb", value: 58},
+      %{label: "Mar", value: 33},
+      %{label: "Apr", value: 71},
+      %{label: "May", value: 65},
+      %{label: "Jun", value: 90}
+    ]
+  }
+]
+
+chart = Plotto.LineChart.new!(data, title: "Monthly Sales", legend: :bottom_left)
 svg = Plotto.to_svg!(chart)
 png = Plotto.to_png!(chart)
 
