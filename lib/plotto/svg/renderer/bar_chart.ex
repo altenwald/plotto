@@ -19,33 +19,43 @@ defmodule Plotto.SVG.Renderer.BarChart do
 
     labels = data |> List.first() |> Map.fetch!(:data) |> Enum.map(& &1.label)
     bands = Axis.categorical_scale(labels, plot_width)
-    max_value = calculate_max_value(data, mode)
-    bars = build_bars(data, bands, margin, plot_height, max_value, opts.colors, mode)
+    {min_value, max_value} = calculate_domain(data, mode)
+    bars = build_bars(data, bands, margin, plot_height, min_value, max_value, opts.colors, mode)
 
     legend = Shared.legend_elements(entries, opts.legend, margin, opts.width, opts.height)
 
     children =
-      Shared.axis_elements(bands, margin, plot_width, plot_height, max_value) ++
+      Shared.axis_elements(bands, margin, plot_width, plot_height, min_value, max_value) ++
         bars ++ Shared.title_elements(opts.title, opts.width) ++ legend
 
     Shared.svg_root(opts.width, opts.height, children)
   end
 
-  defp calculate_max_value(data, :grouped) do
-    data |> Enum.flat_map(& &1.data) |> Enum.map(& &1.value) |> Enum.max()
+  defp calculate_domain(data, :grouped) do
+    all_values = data |> Enum.flat_map(& &1.data) |> Enum.map(& &1.value)
+    min_value = min(0, Enum.min(all_values))
+    max_value = max(0, Enum.max(all_values))
+    {min_value, max_value}
   end
 
-  defp calculate_max_value(data, :stacked) do
-    category_totals =
-      data
-      |> Enum.map(fn series -> Enum.map(series.data, & &1.value) end)
-      |> List.zip()
-      |> Enum.map(fn tuple -> Tuple.to_list(tuple) |> Enum.sum() end)
+  defp calculate_domain(data, :stacked) do
+    n_categories = data |> List.first() |> Map.fetch!(:data) |> length()
 
-    if category_totals == [], do: 0, else: Enum.max(category_totals)
+    {min_neg, max_pos} =
+      for cat_index <- 0..(n_categories - 1) do
+        values = Enum.map(data, fn series -> Enum.at(series.data, cat_index).value end)
+        pos_sum = values |> Enum.filter(&(&1 > 0)) |> Enum.sum()
+        neg_sum = values |> Enum.filter(&(&1 < 0)) |> Enum.sum()
+        {neg_sum, pos_sum}
+      end
+      |> Enum.reduce({0, 0}, fn {neg_sum, pos_sum}, {min_neg, max_pos} ->
+        {min(min_neg, neg_sum), max(max_pos, pos_sum)}
+      end)
+
+    {min(0, min_neg), max(0, max_pos)}
   end
 
-  defp build_bars(data, bands, margin, plot_height, max_value, colors, :grouped) do
+  defp build_bars(data, bands, margin, plot_height, min_value, max_value, colors, :grouped) do
     n_series = length(data)
 
     data
@@ -56,24 +66,39 @@ defmodule Plotto.SVG.Renderer.BarChart do
       series.data
       |> Enum.zip(bands)
       |> Enum.map(
-        &build_grouped_bar(&1, margin, plot_height, max_value, color, series_index, n_series)
+        &build_grouped_bar(
+          &1,
+          margin,
+          plot_height,
+          min_value,
+          max_value,
+          color,
+          series_index,
+          n_series
+        )
       )
     end)
   end
 
-  defp build_bars(data, bands, margin, plot_height, max_value, colors, :stacked) do
+  defp build_bars(data, bands, margin, plot_height, min_value, max_value, colors, :stacked) do
     n_categories = length(bands)
 
     for cat_index <- 0..(n_categories - 1) do
       band = Enum.at(bands, cat_index)
 
-      {segments, _cumulative} =
+      {segments, _pos, _neg} =
         data
         |> Enum.with_index()
-        |> Enum.reduce({[], 0}, fn {series, series_index}, {acc_segments, bottom_val} ->
+        |> Enum.reduce({[], 0, 0}, fn {series, series_index}, {acc_segments, pos_base, neg_base} ->
           item = Enum.at(series.data, cat_index)
           color = Theme.color(colors, series_index)
-          top_val = bottom_val + item.value
+
+          {bottom_val, top_val, next_pos, next_neg} =
+            if item.value >= 0 do
+              {pos_base, pos_base + item.value, pos_base + item.value, neg_base}
+            else
+              {neg_base, neg_base + item.value, pos_base, neg_base + item.value}
+            end
 
           segment =
             build_stacked_segment(
@@ -81,13 +106,14 @@ defmodule Plotto.SVG.Renderer.BarChart do
               band,
               margin,
               plot_height,
+              min_value,
               max_value,
               color,
               bottom_val,
               top_val
             )
 
-          {[segment | acc_segments], top_val}
+          {[segment | acc_segments], next_pos, next_neg}
         end)
 
       Enum.reverse(segments)
@@ -99,6 +125,7 @@ defmodule Plotto.SVG.Renderer.BarChart do
          {item, band},
          margin,
          plot_height,
+         min_value,
          max_value,
          color,
          series_index,
@@ -109,8 +136,10 @@ defmodule Plotto.SVG.Renderer.BarChart do
     sub_width = inner_width / n_series
     bar_x = inner_x + series_index * sub_width
 
-    top_y = margin.top + Axis.linear_scale(item.value, max_value, plot_height)
-    bar_height = plot_height - Axis.linear_scale(item.value, max_value, plot_height)
+    val_y = Axis.linear_scale(item.value, min_value, max_value, plot_height)
+    zero_y = Axis.linear_scale(0, min_value, max_value, plot_height)
+    top_y = margin.top + min(val_y, zero_y)
+    bar_height = abs(val_y - zero_y)
 
     attrs =
       %{
@@ -130,6 +159,7 @@ defmodule Plotto.SVG.Renderer.BarChart do
          band,
          margin,
          plot_height,
+         min_value,
          max_value,
          color,
          bottom_val,
@@ -138,9 +168,10 @@ defmodule Plotto.SVG.Renderer.BarChart do
     bar_width = band.band_width * 0.8
     bar_x = margin.left + band.band_x + band.band_width * 0.1
 
-    top_y = margin.top + Axis.linear_scale(top_val, max_value, plot_height)
-    bottom_y = margin.top + Axis.linear_scale(bottom_val, max_value, plot_height)
-    bar_height = bottom_y - top_y
+    y1 = Axis.linear_scale(bottom_val, min_value, max_value, plot_height)
+    y2 = Axis.linear_scale(top_val, min_value, max_value, plot_height)
+    top_y = margin.top + min(y1, y2)
+    bar_height = abs(y1 - y2)
 
     attrs =
       %{

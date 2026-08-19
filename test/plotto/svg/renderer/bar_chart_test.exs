@@ -291,4 +291,56 @@ defmodule Plotto.SVG.Renderer.BarChartTest do
       assert "s2" in data_ids
     end
   end
+
+  describe "negative values" do
+    test "in grouped mode, negative bars extend downwards from the zero baseline" do
+      data = [
+        %{name: "Profit", data: [%{label: "Jan", value: 50}, %{label: "Feb", value: -30}]}
+      ]
+
+      chart = BarChart.new!(data, width: 600, height: 400)
+      svg = Renderer.render(chart)
+      rects = Enum.filter(svg.children, &(&1.tag == "rect"))
+      [pos_rect, neg_rect] = rects
+
+      # Baseline is at y = linear_scale(0, -30, 50, plot_height) + margin.top
+      margin = Plotto.Theme.margin()
+      plot_height = 400 - margin.top - margin.bottom
+      zero_y = margin.top + Plotto.Axis.linear_scale(0, -30, 50, plot_height)
+
+      pos_y = elem(Float.parse(pos_rect.attrs["y"]), 0)
+      pos_height = elem(Float.parse(pos_rect.attrs["height"]), 0)
+      neg_y = elem(Float.parse(neg_rect.attrs["y"]), 0)
+      neg_height = elem(Float.parse(neg_rect.attrs["height"]), 0)
+
+      # Positive bar sits on top of the zero baseline (pos_y + pos_height == zero_y)
+      assert_in_delta pos_y + pos_height, zero_y, 0.01
+      # Negative bar hangs down from the zero baseline (neg_y == zero_y)
+      assert_in_delta neg_y, zero_y, 0.01
+      assert neg_height > 0
+    end
+
+    test "in stacked mode, positive bars stack upwards and negative bars stack downwards from zero" do
+      data = [
+        %{name: "Revenue", data: [%{label: "Jan", value: 40}]},
+        %{name: "Expenses", data: [%{label: "Jan", value: -25}]}
+      ]
+
+      chart = BarChart.new!(data, mode: :stacked, width: 600, height: 400)
+      svg = Renderer.render(chart)
+      rects = Enum.filter(svg.children, &(&1.tag == "rect"))
+      [pos_rect, neg_rect] = rects
+
+      margin = Plotto.Theme.margin()
+      plot_height = 400 - margin.top - margin.bottom
+      zero_y = margin.top + Plotto.Axis.linear_scale(0, -25, 40, plot_height)
+
+      pos_y = elem(Float.parse(pos_rect.attrs["y"]), 0)
+      pos_height = elem(Float.parse(pos_rect.attrs["height"]), 0)
+      neg_y = elem(Float.parse(neg_rect.attrs["y"]), 0)
+
+      assert_in_delta pos_y + pos_height, zero_y, 0.01
+      assert_in_delta neg_y, zero_y, 0.01
+    end
+  end
 end
