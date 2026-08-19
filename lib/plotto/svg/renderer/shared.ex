@@ -107,52 +107,75 @@ defmodule Plotto.SVG.Renderer.Shared do
     end
   end
 
-  def effective_margin(margin, legend, name) do
-    if draws_legend?(legend, name) do
-      case legend do
-        position when position in [:top_left, :top_right] ->
-          Map.update!(margin, :top, &(&1 + Theme.legend_row_height()))
+  def effective_margin(margin, legend, entries) do
+    case length(drawable_entries(legend, entries)) do
+      0 ->
+        margin
 
-        position when position in [:bottom_left, :bottom_right] ->
-          Map.update!(margin, :bottom, &(&1 + Theme.legend_row_height()))
-      end
-    else
-      margin
+      n ->
+        case legend do
+          position when position in [:top_left, :top_right] ->
+            Map.update!(margin, :top, &(&1 + Theme.legend_row_height() * n))
+
+          position when position in [:bottom_left, :bottom_right] ->
+            Map.update!(margin, :bottom, &(&1 + Theme.legend_row_height() * n))
+        end
     end
   end
 
-  def legend_elements(nil, _legend, _color, _margin, _width, _height), do: []
-  def legend_elements(_name, nil, _color, _margin, _width, _height), do: []
+  def legend_elements(entries, legend, margin, width, height) do
+    drawable = drawable_entries(legend, entries)
+    n = length(drawable)
 
-  def legend_elements(_name, legend, _color, _margin, _width, _height)
-      when legend not in @legend_positions,
-      do: []
+    drawable
+    |> Enum.with_index()
+    |> Enum.flat_map(fn {{name, color}, i} ->
+      legend_row(name, color, legend, margin, width, height, i, n)
+    end)
+  end
 
-  def legend_elements(name, legend, color, margin, width, height) do
+  # Shared by effective_margin/3 and legend_elements/5 so they can never disagree
+  # on "how many rows will actually draw" — filters out nil-named entries (the only
+  # way a single-series chart with `name: nil` reaches this point, since
+  # Plotto.Data.validate/1 requires non-nil names whenever there are 2+ series) and
+  # returns [] outright for an invalid/nil `legend` position.
+  defp drawable_entries(legend, entries) when legend in @legend_positions do
+    Enum.filter(entries, fn {name, _color} -> not is_nil(name) end)
+  end
+
+  defp drawable_entries(_legend, _entries), do: []
+
+  # Generalizes the single-row formula from the prior legend design (n = 1, i = 0
+  # reduces to `anchor - row_height / 2`, matching it exactly): row `i` (0-based,
+  # `i = 0` topmost) of `n` total rows.
+  #
+  # Top: anchored to `margin.top` (already enlarged by effective_margin/3) — the
+  # title lives at a fixed absolute y independent of margin, so the band above the
+  # (enlarged) margin.top is genuinely empty.
+  #
+  # Bottom: anchored to the absolute `height`, NOT `margin.bottom` — the x-axis tick
+  # labels are positioned relative to margin.bottom (see `x_label/2` above), so they
+  # shift down as margin.bottom grows; the actual empty space is the last
+  # `row_height * n` pixels of the canvas. Anchoring to margin.bottom instead would
+  # place the legend on the tick labels' baseline (a real bug caught in the prior
+  # single-entry legend design).
+  #
+  # `y_center(i) = anchor - row_height * (n - i - 0.5)` is strictly increasing in
+  # `i` regardless of anchor, so row 0 is topmost-within-the-band for both :top_*
+  # and :bottom_* positions — no special-casing needed per anchor.
+  defp legend_row(name, color, legend, margin, width, height, i, n) do
     swatch_size = Theme.legend_swatch_size()
     gap = Theme.legend_gap()
     row_height = Theme.legend_row_height()
     font_size = Theme.font_size()
 
-    # Top: the reserved band sits between the base margin.top (where the title lives,
-    # at a fixed absolute y independent of margin) and the enlarged margin.top — so it's
-    # anchored to `margin.top` (already enlarged by effective_margin/3).
-    #
-    # Bottom: the x-axis tick labels are positioned *relative to* margin.bottom (see
-    # `x_label/2` above), so as margin.bottom grows the tick labels shift down with it —
-    # the actual empty space freed up is the last `row_height` pixels of the canvas,
-    # anchored to the absolute `height`, NOT to margin.bottom. Anchoring this to
-    # margin.bottom instead (as an earlier version of this code did) would place the
-    # legend on the exact same baseline as the tick labels for any dataset.
-    #
-    # By this point `legend` is guaranteed to be one of the four valid positions —
-    # the guard clause above already returns [] for any other value, so neither
-    # `case` below needs (or should have) a fallback clause.
-    y_center =
+    anchor =
       case legend do
-        position when position in [:top_left, :top_right] -> margin.top - row_height / 2
-        position when position in [:bottom_left, :bottom_right] -> height - row_height / 2
+        position when position in [:top_left, :top_right] -> margin.top
+        position when position in [:bottom_left, :bottom_right] -> height
       end
+
+    y_center = anchor - row_height * (n - i - 0.5)
 
     {swatch_x, text_x, text_anchor} =
       case legend do
@@ -186,9 +209,5 @@ defmodule Plotto.SVG.Renderer.Shared do
       )
 
     [swatch, text]
-  end
-
-  defp draws_legend?(legend, name) do
-    legend in @legend_positions and not is_nil(name)
   end
 end
