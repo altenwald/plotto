@@ -4,7 +4,9 @@ defmodule Plotto.SVG.Renderer.LineChartTest do
   alias Plotto.LineChart
   alias Plotto.SVG.Renderer.LineChart, as: Renderer
 
-  @single_series [%{name: "Revenue", data: [%{label: "Jan", value: 10}, %{label: "Feb", value: 25}]}]
+  @single_series [
+    %{name: "Revenue", data: [%{label: "Jan", value: 10}, %{label: "Feb", value: 25}]}
+  ]
 
   test "render/1 returns an <svg> root with a single <polyline>" do
     chart = LineChart.new!(@single_series)
@@ -32,7 +34,10 @@ defmodule Plotto.SVG.Renderer.LineChartTest do
   end
 
   test "per-item :attrs are merged onto the corresponding <circle>" do
-    data = [%{name: "Revenue", data: [%{label: "Jan", value: 10, attrs: %{"phx-click" => "select"}}]}]
+    data = [
+      %{name: "Revenue", data: [%{label: "Jan", value: 10, attrs: %{"phx-click" => "select"}}]}
+    ]
+
     chart = LineChart.new!(data)
     svg = Renderer.render(chart)
     [circle] = Enum.filter(svg.children, &(&1.tag == "circle"))

@@ -4,7 +4,9 @@ defmodule Plotto.SVG.Renderer.BarChartTest do
   alias Plotto.BarChart
   alias Plotto.SVG.Renderer.BarChart, as: Renderer
 
-  @single_series [%{name: "Sales", data: [%{label: "Jan", value: 10}, %{label: "Feb", value: 25}]}]
+  @single_series [
+    %{name: "Sales", data: [%{label: "Jan", value: 10}, %{label: "Feb", value: 25}]}
+  ]
 
   test "render/1 returns an <svg> root with one <rect> per data item for a single series" do
     chart = BarChart.new!(@single_series)
@@ -25,7 +27,10 @@ defmodule Plotto.SVG.Renderer.BarChartTest do
   end
 
   test "per-item :attrs are merged onto the corresponding <rect>" do
-    data = [%{name: "Sales", data: [%{label: "Jan", value: 10, attrs: %{"phx-click" => "select"}}]}]
+    data = [
+      %{name: "Sales", data: [%{label: "Jan", value: 10, attrs: %{"phx-click" => "select"}}]}
+    ]
+
     chart = BarChart.new!(data)
     svg = Renderer.render(chart)
     [rect] = Enum.filter(svg.children, &(&1.tag == "rect"))
@@ -200,8 +205,11 @@ defmodule Plotto.SVG.Renderer.BarChartTest do
 
     for expected_name <- ["Sales", "Costs"] do
       assert Enum.any?(svg.children, fn
-               %{tag: "text", children: [^expected_name]} = text -> text.attrs["text-anchor"] == "end"
-               _ -> false
+               %{tag: "text", children: [^expected_name]} = text ->
+                 text.attrs["text-anchor"] == "end"
+
+               _ ->
+                 false
              end)
     end
   end

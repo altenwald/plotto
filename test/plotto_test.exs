@@ -7,7 +7,9 @@ defmodule PlottoTest do
 
   alias Plotto.{BarChart, LineChart}
 
-  @single_series [%{name: "Sales", data: [%{label: "Jan", value: 10}, %{label: "Feb", value: 25}]}]
+  @single_series [
+    %{name: "Sales", data: [%{label: "Jan", value: 10}, %{label: "Feb", value: 25}]}
+  ]
 
   test "to_svg/1 returns {:ok, svg_string} for a bar chart" do
     chart = BarChart.new!(@single_series)
@@ -24,7 +26,10 @@ defmodule PlottoTest do
   end
 
   test "per-item attrs pass through end to end into the SVG output" do
-    data = [%{name: "Sales", data: [%{label: "Jan", value: 10, attrs: %{"phx-click" => "select"}}]}]
+    data = [
+      %{name: "Sales", data: [%{label: "Jan", value: 10, attrs: %{"phx-click" => "select"}}]}
+    ]
+
     chart = BarChart.new!(data)
 
     svg = Plotto.to_svg!(chart)

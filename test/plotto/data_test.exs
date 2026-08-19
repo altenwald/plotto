@@ -23,7 +23,10 @@ defmodule Plotto.DataTest do
   end
 
   test "a valid item may include an :attrs map" do
-    data = [%{name: "Sales", data: [%{label: "Jan", value: 10, attrs: %{"phx-click" => "select"}}]}]
+    data = [
+      %{name: "Sales", data: [%{label: "Jan", value: 10, attrs: %{"phx-click" => "select"}}]}
+    ]
+
     assert Data.validate(data) == :ok
   end
 

@@ -116,7 +116,8 @@ defmodule Plotto.SVG.Renderer.SharedTest do
     end
 
     test "returns one swatch+text pair for a single entry" do
-      [swatch, text] = Shared.legend_elements([{"Sales", "#4E79A7"}], :top_right, @margin, 600, 400)
+      [swatch, text] =
+        Shared.legend_elements([{"Sales", "#4E79A7"}], :top_right, @margin, 600, 400)
 
       assert swatch.tag == "rect"
       assert swatch.attrs["fill"] == "#4E79A7"
@@ -139,6 +140,7 @@ defmodule Plotto.SVG.Renderer.SharedTest do
 
       for position <- [:top_left, :bottom_left] do
         margin = Shared.effective_margin(@margin, position, entries)
+
         [row0_swatch, _row0_text, row1_swatch, _row1_text] =
           Shared.legend_elements(entries, position, margin, 600, 400)
 
