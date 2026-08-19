@@ -33,15 +33,9 @@ defmodule Plotto.Data do
       "got: #{inspect(series)}"
   end
 
-  defp item_error(%{label: label, value: value}, name)
-       when is_binary(label) and is_number(value) do
-    if value < 0 do
-      "value must not be negative, got: #{inspect(value)} for label #{inspect(label)} " <>
-        "in series: #{inspect(name)}"
-    else
-      nil
-    end
-  end
+  defp item_error(%{label: label, value: value}, _name)
+       when is_binary(label) and is_number(value),
+       do: nil
 
   defp item_error(item, name) do
     "invalid data item, expected a map with :label (string) and :value (number), " <>

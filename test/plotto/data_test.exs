@@ -65,10 +65,9 @@ defmodule Plotto.DataTest do
     assert {:error, _reason} = Data.validate(data)
   end
 
-  test "rejects an item with a negative :value" do
-    data = [%{name: "Sales", data: [%{label: "Jan", value: -1}]}]
-    assert {:error, reason} = Data.validate(data)
-    assert reason =~ "negative"
+  test "accepts an item with a negative :value" do
+    data = [%{name: "Sales", data: [%{label: "Jan", value: -10}]}]
+    assert Data.validate(data) == :ok
   end
 
   test "rejects mismatched labels across series" do
