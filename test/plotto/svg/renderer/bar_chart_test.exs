@@ -213,4 +213,82 @@ defmodule Plotto.SVG.Renderer.BarChartTest do
              end)
     end
   end
+
+  describe "stacked mode (:mode => :stacked)" do
+    test "each segment in a stacked bar spans the full inner category width" do
+      data = [
+        %{name: "Sales", data: [%{label: "Jan", value: 10}]},
+        %{name: "Costs", data: [%{label: "Jan", value: 5}]}
+      ]
+
+      chart = BarChart.new!(data, mode: :stacked, width: 600, height: 400)
+      svg = Renderer.render(chart)
+      rects = Enum.filter(svg.children, &(&1.tag == "rect"))
+
+      assert length(rects) == 2
+      [first, second] = rects
+
+      first_width = elem(Float.parse(first.attrs["width"]), 0)
+      second_width = elem(Float.parse(second.attrs["width"]), 0)
+      first_x = elem(Float.parse(first.attrs["x"]), 0)
+      second_x = elem(Float.parse(second.attrs["x"]), 0)
+
+      assert first_width == second_width
+      assert first_x == second_x
+    end
+
+    test "segments in a category are stacked vertically on top of each other" do
+      data = [
+        %{name: "Sales", data: [%{label: "Jan", value: 20}]},
+        %{name: "Costs", data: [%{label: "Jan", value: 30}]}
+      ]
+
+      chart = BarChart.new!(data, mode: :stacked, width: 600, height: 400)
+      svg = Renderer.render(chart)
+      rects = Enum.filter(svg.children, &(&1.tag == "rect"))
+
+      # Series 0 (Sales, 20) is at the bottom; Series 1 (Costs, 30) is stacked on top
+      # In SVG, smaller y is higher up on screen
+      [bottom_segment, top_segment] = rects
+
+      bottom_y = elem(Float.parse(bottom_segment.attrs["y"]), 0)
+      top_y = elem(Float.parse(top_segment.attrs["y"]), 0)
+      top_height = elem(Float.parse(top_segment.attrs["height"]), 0)
+
+      assert_in_delta top_y + top_height, bottom_y, 0.01
+    end
+
+    test "max_value in stacked mode scales to the maximum category sum across all series" do
+      data = [
+        %{name: "Sales", data: [%{label: "Jan", value: 30}, %{label: "Feb", value: 40}]},
+        %{name: "Costs", data: [%{label: "Jan", value: 50}, %{label: "Feb", value: 60}]}
+      ]
+
+      chart = BarChart.new!(data, mode: :stacked, height: 400)
+      svg = Renderer.render(chart)
+
+      # In Feb, total is 40 + 60 = 100. Jan is 30 + 50 = 80.
+      # The top of Feb's upper segment should reach y = margin.top (value == max_value => linear_scale == 0)
+      margin = Plotto.Theme.margin()
+      rects = Enum.filter(svg.children, &(&1.tag == "rect"))
+      min_y = rects |> Enum.map(&elem(Float.parse(&1.attrs["y"]), 0)) |> Enum.min()
+
+      assert_in_delta min_y, margin.top, 0.01
+    end
+
+    test "per-item attrs are preserved on each stacked segment" do
+      data = [
+        %{name: "Sales", data: [%{label: "Jan", value: 10, attrs: %{"data-id" => "s1"}}]},
+        %{name: "Costs", data: [%{label: "Jan", value: 5, attrs: %{"data-id" => "s2"}}]}
+      ]
+
+      chart = BarChart.new!(data, mode: :stacked)
+      svg = Renderer.render(chart)
+      rects = Enum.filter(svg.children, &(&1.tag == "rect"))
+
+      data_ids = Enum.map(rects, & &1.attrs["data-id"])
+      assert "s1" in data_ids
+      assert "s2" in data_ids
+    end
+  end
 end
