@@ -184,5 +184,22 @@ defmodule PlottoTest do
 
       assert binary_part(png, 0, 8) == @png_signature
     end
+
+    test "a stacked bar chart renders both SVG and PNG end-to-end without error" do
+      data = [
+        %{name: "Sales", data: [%{label: "Jan", value: 40}, %{label: "Feb", value: 60}]},
+        %{name: "Costs", data: [%{label: "Jan", value: 20}, %{label: "Feb", value: 30}]}
+      ]
+
+      chart = BarChart.new!(data, mode: :stacked, title: "Stacked Sales vs Costs", legend: :top_left)
+
+      assert {:ok, svg} = Plotto.to_svg(chart)
+      assert svg =~ "<rect"
+      assert svg =~ "Sales"
+      assert svg =~ "Costs"
+
+      assert {:ok, png} = Plotto.to_png(chart)
+      assert binary_part(png, 0, 8) == @png_signature
+    end
   end
 end
