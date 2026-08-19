@@ -6,17 +6,20 @@ defmodule Plotto.SVG.Renderer.LineChart do
   alias Plotto.{Axis, Theme}
 
   def render(%Plotto.LineChart{data: data, opts: opts}) do
-    margin = Shared.effective_margin(Theme.margin(), opts.legend, opts.name)
+    %{name: name, data: series_data} = List.first(data)
+    color = Theme.color(opts.colors, 0)
+    entries = [{name, color}]
+
+    margin = Shared.effective_margin(Theme.margin(), opts.legend, entries)
     plot_width = opts.width - margin.left - margin.right
     plot_height = opts.height - margin.top - margin.bottom
 
-    labels = Enum.map(data, & &1.label)
+    labels = Enum.map(series_data, & &1.label)
     bands = Axis.categorical_scale(labels, plot_width)
-    max_value = data |> Enum.map(& &1.value) |> Enum.max()
-    color = List.first(opts.colors)
+    max_value = series_data |> Enum.map(& &1.value) |> Enum.max()
 
     points =
-      data
+      series_data
       |> Enum.zip(bands)
       |> Enum.map(fn {item, band} ->
         x = margin.left + band.x
@@ -24,15 +27,7 @@ defmodule Plotto.SVG.Renderer.LineChart do
         {item, x, y}
       end)
 
-    legend =
-      Shared.legend_elements(
-        opts.name,
-        opts.legend,
-        Theme.color(opts.colors, 0),
-        margin,
-        opts.width,
-        opts.height
-      )
+    legend = Shared.legend_elements(entries, opts.legend, margin, opts.width, opts.height)
 
     children =
       Shared.axis_elements(bands, margin, plot_width, plot_height, max_value) ++
