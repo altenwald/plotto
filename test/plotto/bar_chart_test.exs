@@ -3,7 +3,7 @@ defmodule Plotto.BarChartTest do
 
   alias Plotto.BarChart
 
-  @valid_data [%{label: "Jan", value: 10}, %{label: "Feb", value: 25}]
+  @valid_data [%{name: "Sales", data: [%{label: "Jan", value: 10}, %{label: "Feb", value: 25}]}]
 
   test "new/2 returns {:ok, chart} for valid data" do
     assert {:ok, %BarChart{data: @valid_data}} = BarChart.new(@valid_data)
@@ -35,9 +35,18 @@ defmodule Plotto.BarChartTest do
     assert_raise ArgumentError, fn -> BarChart.new!(@valid_data, legend: :middle) end
   end
 
-  test "new/2 accepts a valid :legend position together with :name" do
-    assert {:ok, chart} = BarChart.new(@valid_data, name: "Sales", legend: :top_right)
-    assert chart.opts.name == "Sales"
+  test "new/2 accepts a valid :legend position" do
+    assert {:ok, chart} = BarChart.new(@valid_data, legend: :top_right)
     assert chart.opts.legend == :top_right
+  end
+
+  test "new/2 returns {:error, reason} for a nil series name with 2+ series" do
+    data = [
+      %{name: nil, data: [%{label: "Jan", value: 10}]},
+      %{name: "Costs", data: [%{label: "Jan", value: 5}]}
+    ]
+
+    assert {:error, reason} = BarChart.new(data)
+    assert reason =~ "name is required"
   end
 end

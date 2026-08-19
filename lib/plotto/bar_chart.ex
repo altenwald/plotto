@@ -1,18 +1,26 @@
 defmodule Plotto.BarChart do
   @moduledoc """
-  A bar chart: one bar per data item, bar height proportional to `:value`.
+  A bar chart: one or more series, each rendered as a group of bars per category,
+  bar height proportional to `:value`.
 
-  Use a bar chart to compare a value across categories — sales per month, votes per
-  candidate, and similar "one number per category" data.
+  Use a bar chart to compare values across categories — sales per month, votes per
+  candidate, and similar "one or more numbers per category" data. With multiple
+  series, each category shows one bar per series, grouped side by side and colored
+  per series (see `:colors`); a legend (see `:legend`) can label each series.
 
   ## Example
 
       data = [
-        %{label: "Jan", value: 10, attrs: %{"phx-click" => "select", "phx-value-id" => "1"}},
-        %{label: "Feb", value: 25}
+        %{
+          name: "Sales",
+          data: [
+            %{label: "Jan", value: 10, attrs: %{"phx-click" => "select", "phx-value-id" => "1"}},
+            %{label: "Feb", value: 25}
+          ]
+        }
       ]
 
-      chart = Plotto.BarChart.new!(data, title: "Sales", colors: ["#4E79A7", "#F28E2B"])
+      chart = Plotto.BarChart.new!(data, title: "Sales", colors: ["#4E79A7"])
       svg = Plotto.to_svg!(chart)
       png = Plotto.to_png!(chart)
 
@@ -33,6 +41,16 @@ defmodule Plotto.BarChart do
         }
 
   @typedoc """
+  One data series: `:name` (required when there are 2+ series — see `new/2`) and its
+  list of `t:data_item/0` points. All series in a chart must share identical,
+  identically-ordered `:label`s across their `:data`.
+  """
+  @type series :: %{
+          required(:name) => String.t() | nil,
+          required(:data) => [data_item()]
+        }
+
+  @typedoc """
   Chart options, after defaults have been applied. Passed as a keyword list to
   `new/2`/`new!/2`; stored in this resolved map form on the chart struct
   (`t:t/0`'s `:opts` field).
@@ -42,18 +60,19 @@ defmodule Plotto.BarChart do
           height: pos_integer(),
           title: String.t() | nil,
           colors: [String.t()],
-          name: String.t() | nil,
           legend: :top_left | :top_right | :bottom_left | :bottom_right | nil
         }
 
-  @type t :: %__MODULE__{data: [data_item()], opts: options()}
+  @type t :: %__MODULE__{data: [series()], opts: options()}
 
   @doc """
   Builds a bar chart. Returns `{:ok, chart}` or `{:error, reason}`.
 
-  `data` is a list of `t:data_item/0` maps: each needs a `:label` (string) and a
-  non-negative `:value` (number), and may include `:attrs` for per-bar attribute
-  passthrough (e.g. Phoenix LiveView's `phx-click`).
+  `data` is a list of `t:series/0` maps — one or more series, each with a `:name`
+  and a list of `t:data_item/0` points. All series must have identical,
+  identically-ordered `:label`s; `:name` may be `nil` only when there is exactly one
+  series (2+ series must each have a non-nil `:name`, since it's shown in the
+  legend).
 
   ## Options
 
@@ -61,24 +80,22 @@ defmodule Plotto.BarChart do
     * `:height` - chart height in pixels. Defaults to `400`.
     * `:title` - optional chart title, centered above the plot. Defaults to `nil` (no
       title).
-    * `:colors` - list of `"#RRGGBB"` hex color strings, cycled one per bar. Defaults
-      to `["#4E79A7", "#F28E2B", "#E15759", "#76B7B2", "#59A14F"]`.
-    * `:name` - optional series name, shown in the legend when `:legend` is also set.
-      Defaults to `nil`.
+    * `:colors` - list of `"#RRGGBB"` hex color strings, cycled **per series** — all
+      bars within one series share the same color (`Theme.color(colors, series_index)`).
+      Defaults to `["#4E79A7", "#F28E2B", "#E15759", "#76B7B2", "#59A14F"]`.
     * `:legend` - optional legend position: `:top_left`, `:top_right`, `:bottom_left`,
-      or `:bottom_right`. The legend (a color swatch plus `:name`) only renders when
-      **both** `:legend` and `:name` are set — if `:name` is `nil`, nothing is drawn.
-      Defaults to `nil` (no legend).
+      or `:bottom_right`. Renders one swatch+name row per series (using each series'
+      `:name`), stacked vertically. Defaults to `nil` (no legend).
 
   ## Examples
 
-      iex> {:ok, chart} = Plotto.BarChart.new([%{label: "Jan", value: 10}])
+      iex> {:ok, chart} = Plotto.BarChart.new([%{name: "Sales", data: [%{label: "Jan", value: 10}]}])
       iex> chart.data
-      [%{label: "Jan", value: 10}]
+      [%{name: "Sales", data: [%{label: "Jan", value: 10}]}]
 
       iex> {:ok, chart} =
       ...>   Plotto.BarChart.new(
-      ...>     [%{label: "Jan", value: 10, attrs: %{"phx-click" => "select"}}],
+      ...>     [%{name: "Sales", data: [%{label: "Jan", value: 10, attrs: %{"phx-click" => "select"}}]}],
       ...>     title: "Sales",
       ...>     colors: ["#000000"]
       ...>   )
@@ -87,18 +104,24 @@ defmodule Plotto.BarChart do
 
       iex> {:ok, chart} =
       ...>   Plotto.BarChart.new(
-      ...>     [%{label: "Jan", value: 10}],
-      ...>     name: "Sales",
+      ...>     [%{name: "Sales", data: [%{label: "Jan", value: 10}]}],
       ...>     legend: :top_right
       ...>   )
-      iex> {chart.opts.name, chart.opts.legend}
-      {"Sales", :top_right}
+      iex> chart.opts.legend
+      :top_right
 
-      iex> Plotto.BarChart.new([%{label: "Jan", value: 10}], legend: :middle)
+      iex> Plotto.BarChart.new([%{name: "Sales", data: [%{label: "Jan", value: 10}]}], legend: :middle)
       {:error, "invalid legend position, got: :middle"}
 
       iex> Plotto.BarChart.new([])
       {:error, "data must not be empty"}
+
+      iex> data = [
+      ...>   %{name: "Sales", data: [%{label: "Jan", value: 10}]},
+      ...>   %{name: nil, data: [%{label: "Jan", value: 5}]}
+      ...> ]
+      iex> Plotto.BarChart.new(data)
+      {:error, "series name is required when there are multiple series"}
 
   """
   def new(data, opts \\ []), do: Plotto.Chart.Builder.new(__MODULE__, data, opts)

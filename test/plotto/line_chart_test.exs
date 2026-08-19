@@ -3,10 +3,15 @@ defmodule Plotto.LineChartTest do
 
   alias Plotto.LineChart
 
-  @valid_data [%{label: "Jan", value: 10}, %{label: "Feb", value: 25}]
+  @valid_data [%{name: "Trend", data: [%{label: "Jan", value: 10}, %{label: "Feb", value: 25}]}]
 
   test "new/2 returns {:ok, chart} for valid data" do
     assert {:ok, %LineChart{data: @valid_data}} = LineChart.new(@valid_data)
+  end
+
+  test "new/2 applies default opts when none given" do
+    {:ok, chart} = LineChart.new(@valid_data)
+    assert chart.opts.width == Plotto.Theme.default_width()
   end
 
   test "new/2 returns {:error, reason} for invalid data" do
@@ -30,9 +35,8 @@ defmodule Plotto.LineChartTest do
     assert_raise ArgumentError, fn -> LineChart.new!(@valid_data, legend: :middle) end
   end
 
-  test "new/2 accepts a valid :legend position together with :name" do
-    assert {:ok, chart} = LineChart.new(@valid_data, name: "Trend", legend: :top_right)
-    assert chart.opts.name == "Trend"
+  test "new/2 accepts a valid :legend position" do
+    assert {:ok, chart} = LineChart.new(@valid_data, legend: :top_right)
     assert chart.opts.legend == :top_right
   end
 end

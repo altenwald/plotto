@@ -3,14 +3,22 @@ defmodule Plotto.LineChart do
   A line chart: a single line connecting one point per data item.
 
   Use a line chart to show a trend across ordered categories — a metric over time,
-  for example. Plotto's line charts render exactly one line; multi-series line charts
-  (multiple lines on one chart) are not supported.
+  for example. `data` uses the same multi-series shape as `Plotto.BarChart`, but
+  today only the **first** series is drawn — full multi-series line rendering
+  (multiple lines) is planned for a future release; extra series are currently
+  accepted (so both chart types share the same data validation) but ignored when
+  rendering, including in the legend.
 
   ## Example
 
       data = [
-        %{label: "Jan", value: 10, attrs: %{"phx-click" => "select", "phx-value-id" => "1"}},
-        %{label: "Feb", value: 25}
+        %{
+          name: "Trend",
+          data: [
+            %{label: "Jan", value: 10, attrs: %{"phx-click" => "select", "phx-value-id" => "1"}},
+            %{label: "Feb", value: 25}
+          ]
+        }
       ]
 
       chart = Plotto.LineChart.new!(data, title: "Trend", colors: ["#4E79A7"])
@@ -34,6 +42,17 @@ defmodule Plotto.LineChart do
         }
 
   @typedoc """
+  One data series: `:name` (required when there are 2+ series — see `new/2`) and its
+  list of `t:data_item/0` points. All series in a chart must share identical,
+  identically-ordered `:label`s across their `:data`. Only the first series is
+  currently drawn — see the moduledoc.
+  """
+  @type series :: %{
+          required(:name) => String.t() | nil,
+          required(:data) => [data_item()]
+        }
+
+  @typedoc """
   Chart options, after defaults have been applied. Passed as a keyword list to
   `new/2`/`new!/2`; stored in this resolved map form on the chart struct
   (`t:t/0`'s `:opts` field).
@@ -43,18 +62,17 @@ defmodule Plotto.LineChart do
           height: pos_integer(),
           title: String.t() | nil,
           colors: [String.t()],
-          name: String.t() | nil,
           legend: :top_left | :top_right | :bottom_left | :bottom_right | nil
         }
 
-  @type t :: %__MODULE__{data: [data_item()], opts: options()}
+  @type t :: %__MODULE__{data: [series()], opts: options()}
 
   @doc """
   Builds a line chart. Returns `{:ok, chart}` or `{:error, reason}`.
 
-  `data` is a list of `t:data_item/0` maps: each needs a `:label` (string) and a
-  non-negative `:value` (number), and may include `:attrs` for per-point attribute
-  passthrough (e.g. Phoenix LiveView's `phx-click`).
+  `data` is a list of `t:series/0` maps — see the moduledoc: only the first series
+  is drawn today, but the validation rules (matching labels, `:name` required for
+  2+ series) apply the same as for `Plotto.BarChart`.
 
   ## Options
 
@@ -62,25 +80,22 @@ defmodule Plotto.LineChart do
     * `:height` - chart height in pixels. Defaults to `400`.
     * `:title` - optional chart title, centered above the plot. Defaults to `nil` (no
       title).
-    * `:colors` - list of `"#RRGGBB"` hex color strings; only the *first* color is
-      used, as the line's stroke color (line charts render a single line, so there's
-      no cycling). Defaults to `["#4E79A7", "#F28E2B", "#E15759", "#76B7B2", "#59A14F"]`.
-    * `:name` - optional series name, shown in the legend when `:legend` is also set.
-      Defaults to `nil`.
+    * `:colors` - list of `"#RRGGBB"` hex color strings; only the first color is
+      used, as the (first/only-rendered series') line's stroke color. Defaults to
+      `["#4E79A7", "#F28E2B", "#E15759", "#76B7B2", "#59A14F"]`.
     * `:legend` - optional legend position: `:top_left`, `:top_right`, `:bottom_left`,
-      or `:bottom_right`. The legend swatch uses the same first color as the line
-      itself. Only renders when **both** `:legend` and `:name` are set. Defaults to
-      `nil` (no legend).
+      or `:bottom_right`. Renders one row for the first series' `:name` only.
+      Defaults to `nil` (no legend).
 
   ## Examples
 
-      iex> {:ok, chart} = Plotto.LineChart.new([%{label: "Jan", value: 10}])
+      iex> {:ok, chart} = Plotto.LineChart.new([%{name: "Trend", data: [%{label: "Jan", value: 10}]}])
       iex> chart.data
-      [%{label: "Jan", value: 10}]
+      [%{name: "Trend", data: [%{label: "Jan", value: 10}]}]
 
       iex> {:ok, chart} =
       ...>   Plotto.LineChart.new(
-      ...>     [%{label: "Jan", value: 10, attrs: %{"phx-click" => "select"}}],
+      ...>     [%{name: "Trend", data: [%{label: "Jan", value: 10, attrs: %{"phx-click" => "select"}}]}],
       ...>     title: "Trend",
       ...>     colors: ["#000000"]
       ...>   )
@@ -89,14 +104,13 @@ defmodule Plotto.LineChart do
 
       iex> {:ok, chart} =
       ...>   Plotto.LineChart.new(
-      ...>     [%{label: "Jan", value: 10}],
-      ...>     name: "Sales",
+      ...>     [%{name: "Trend", data: [%{label: "Jan", value: 10}]}],
       ...>     legend: :top_right
       ...>   )
-      iex> {chart.opts.name, chart.opts.legend}
-      {"Sales", :top_right}
+      iex> chart.opts.legend
+      :top_right
 
-      iex> Plotto.LineChart.new([%{label: "Jan", value: 10}], legend: :middle)
+      iex> Plotto.LineChart.new([%{name: "Trend", data: [%{label: "Jan", value: 10}]}], legend: :middle)
       {:error, "invalid legend position, got: :middle"}
 
       iex> Plotto.LineChart.new([])

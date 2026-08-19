@@ -4,19 +4,19 @@ defmodule Plotto do
 
   ## Example
 
-      chart = Plotto.BarChart.new!([%{label: "Jan", value: 10}], title: "Sales")
+      chart = Plotto.BarChart.new!([%{name: "Sales", data: [%{label: "Jan", value: 10}]}], title: "Sales")
       svg = Plotto.to_svg!(chart)
       png = Plotto.to_png!(chart)
 
   ## Options
 
-  Both `Plotto.BarChart` and `Plotto.LineChart` accept the same six options via
-  `new/2`/`new!/2`: `:width`, `:height`, `:title`, `:colors`, `:name`, `:legend`. See
+  Both `Plotto.BarChart` and `Plotto.LineChart` accept the same five options via
+  `new/2`/`new!/2`: `:width`, `:height`, `:title`, `:colors`, `:legend`. See
   `Plotto.BarChart.new/2` (or `Plotto.LineChart.new/2`) for their exact defaults and
   shapes — line charts differ slightly in how `:colors` is used (only the first color
-  is applied, as the single line's stroke), documented there. `:name` and `:legend`
-  together control an optional single-entry legend (a color swatch plus the series
-  name), positioned in one of the chart's four corners.
+  is applied, as the single line's stroke), documented there. `:legend` controls an
+  optional multi-entry legend (one swatch + series name row per series), positioned in
+  one of the chart's four corners.
 
   ## Error handling
 
@@ -35,7 +35,7 @@ defmodule Plotto do
 
   ## Examples
 
-      iex> chart = Plotto.BarChart.new!([%{label: "Jan", value: 10}])
+      iex> chart = Plotto.BarChart.new!([%{name: "Sales", data: [%{label: "Jan", value: 10}]}])
       iex> {:ok, svg} = Plotto.to_svg(chart)
       iex> String.starts_with?(svg, "<svg")
       true
@@ -54,7 +54,7 @@ defmodule Plotto do
 
   ## Examples
 
-      iex> chart = Plotto.BarChart.new!([%{label: "Jan", value: 10}])
+      iex> chart = Plotto.BarChart.new!([%{name: "Sales", data: [%{label: "Jan", value: 10}]}])
       iex> Plotto.to_svg!(chart) |> String.starts_with?("<svg")
       true
 
@@ -74,7 +74,7 @@ defmodule Plotto do
 
   ## Examples
 
-      iex> chart = Plotto.BarChart.new!([%{label: "Jan", value: 10}])
+      iex> chart = Plotto.BarChart.new!([%{name: "Sales", data: [%{label: "Jan", value: 10}]}])
       iex> {:ok, png} = Plotto.to_png(chart)
       iex> binary_part(png, 0, 8) == <<137, 80, 78, 71, 13, 10, 26, 10>>
       true
@@ -102,7 +102,7 @@ defmodule Plotto do
 
   ## Examples
 
-      iex> chart = Plotto.BarChart.new!([%{label: "Jan", value: 10}])
+      iex> chart = Plotto.BarChart.new!([%{name: "Sales", data: [%{label: "Jan", value: 10}]}])
       iex> Plotto.to_png!(chart) |> binary_part(0, 8) == <<137, 80, 78, 71, 13, 10, 26, 10>>
       true
 
