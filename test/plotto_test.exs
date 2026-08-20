@@ -4,8 +4,9 @@ defmodule PlottoTest do
   doctest Plotto
   doctest Plotto.BarChart
   doctest Plotto.LineChart
+  doctest Plotto.CandlestickChart
 
-  alias Plotto.{BarChart, LineChart}
+  alias Plotto.{BarChart, CandlestickChart, LineChart}
 
   @single_series [
     %{name: "Sales", data: [%{label: "Jan", value: 10}, %{label: "Feb", value: 25}]}
@@ -223,6 +224,22 @@ defmodule PlottoTest do
       assert line_svg =~ "<polyline"
       assert {:ok, line_png} = Plotto.to_png(line_chart)
       assert binary_part(line_png, 0, 8) == @png_signature
+    end
+
+    test "a candlestick chart renders SVG and PNG end-to-end without error" do
+      candle_data = [
+        %{label: "09:00", open: 100, high: 108, low: 95, close: 104},
+        %{label: "09:05", open: 104, high: 106, low: 92, close: 96}
+      ]
+
+      chart = CandlestickChart.new!(candle_data, title: "ETH/USDT")
+      assert {:ok, svg} = Plotto.to_svg(chart)
+      assert svg =~ "<line"
+      assert svg =~ "<rect"
+      assert svg =~ "ETH/USDT"
+
+      assert {:ok, png} = Plotto.to_png(chart)
+      assert binary_part(png, 0, 8) == @png_signature
     end
   end
 end

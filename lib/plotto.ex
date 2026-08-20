@@ -8,15 +8,18 @@ defmodule Plotto do
       svg = Plotto.to_svg!(chart)
       png = Plotto.to_png!(chart)
 
+  ## Supported Charts
+
+  - `Plotto.BarChart` - Grouped or stacked bar charts.
+  - `Plotto.LineChart` - Line and trend charts.
+  - `Plotto.CandlestickChart` - Candlestick (OHLC) financial charts.
+
   ## Options
 
-  Both `Plotto.BarChart` and `Plotto.LineChart` accept the same five options via
-  `new/2`/`new!/2`: `:width`, `:height`, `:title`, `:colors`, `:legend`. See
-  `Plotto.BarChart.new/2` (or `Plotto.LineChart.new/2`) for their exact defaults and
-  shapes — line charts differ slightly in how `:colors` is used (only the first color
-  is applied, as the single line's stroke), documented there. `:legend` controls an
-  optional multi-entry legend (one swatch + series name row per series), positioned in
-  one of the chart's four corners.
+  All chart modules accept standard options via `new/2`/`new!/2`: `:width`, `:height`,
+  `:title`, `:colors`, `:legend`. See `Plotto.BarChart`, `Plotto.LineChart`, and
+  `Plotto.CandlestickChart` for their chart-specific options (e.g. `:mode` for bar charts,
+  `:bullish_color` and `:bearish_color` for candlestick charts).
 
   ## Error handling
 
@@ -29,7 +32,7 @@ defmodule Plotto do
   alias Plotto.PNG.{Canvas, Encoder, Rasterizer}
 
   @doc """
-  Renders a chart (`Plotto.BarChart` or `Plotto.LineChart`) to an SVG string.
+  Renders a chart (`Plotto.BarChart`, `Plotto.LineChart`, or `Plotto.CandlestickChart`) to an SVG string.
 
   Returns `{:ok, svg}` on success or `{:error, reason}` if rendering fails.
 
@@ -68,7 +71,7 @@ defmodule Plotto do
   end
 
   @doc """
-  Renders a chart (`Plotto.BarChart` or `Plotto.LineChart`) to a PNG binary.
+  Renders a chart (`Plotto.BarChart`, `Plotto.LineChart`, or `Plotto.CandlestickChart`) to a PNG binary.
 
   Returns `{:ok, png}` on success or `{:error, reason}` if rendering fails.
 
