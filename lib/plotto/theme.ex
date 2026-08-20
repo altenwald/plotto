@@ -20,6 +20,8 @@ defmodule Plotto.Theme do
   @legend_swatch_size 10
   @legend_gap 6
   @legend_row_height 20
+  @bullish_color "#26A69A"
+  @bearish_color "#EF5350"
 
   def default_colors, do: @default_colors
   def default_width, do: @default_width
@@ -33,6 +35,8 @@ defmodule Plotto.Theme do
   def legend_swatch_size, do: @legend_swatch_size
   def legend_gap, do: @legend_gap
   def legend_row_height, do: @legend_row_height
+  def bullish_color, do: @bullish_color
+  def bearish_color, do: @bearish_color
 
   def color([], index), do: color(@default_colors, index)
 

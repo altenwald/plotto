@@ -41,4 +41,9 @@ defmodule Plotto.ThemeTest do
     assert Theme.legend_gap() > 0
     assert Theme.legend_row_height() > 0
   end
+
+  test "bullish_color/0 and bearish_color/0 return hex colors" do
+    assert String.starts_with?(Theme.bullish_color(), "#")
+    assert String.starts_with?(Theme.bearish_color(), "#")
+  end
 end

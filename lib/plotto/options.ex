@@ -14,7 +14,9 @@ defmodule Plotto.Options do
       title: Keyword.get(opts, :title),
       colors: Keyword.get(opts, :colors, Theme.default_colors()),
       legend: Keyword.get(opts, :legend),
-      mode: Keyword.get(opts, :mode, :grouped)
+      mode: Keyword.get(opts, :mode, :grouped),
+      bullish_color: Keyword.get(opts, :bullish_color, Theme.bullish_color()),
+      bearish_color: Keyword.get(opts, :bearish_color, Theme.bearish_color())
     }
   end
 

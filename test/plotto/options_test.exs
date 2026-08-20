@@ -68,4 +68,16 @@ defmodule Plotto.OptionsTest do
     assert Options.validate(mode: :invalid) ==
              {:error, "invalid bar chart mode, got: :invalid"}
   end
+
+  test "fills in default bullish_color and bearish_color" do
+    opts = Options.build([])
+    assert opts.bullish_color == Plotto.Theme.bullish_color()
+    assert opts.bearish_color == Plotto.Theme.bearish_color()
+  end
+
+  test "overrides bullish_color and bearish_color when given" do
+    opts = Options.build(bullish_color: "#00FF00", bearish_color: "#FF0000")
+    assert opts.bullish_color == "#00FF00"
+    assert opts.bearish_color == "#FF0000"
+  end
 end
