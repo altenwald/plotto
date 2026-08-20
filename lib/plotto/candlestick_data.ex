@@ -55,10 +55,12 @@ defmodule Plotto.CandlestickData do
 
     cond do
       high < max_price ->
-        {:error, "high price (#{high}) must be greater than or equal to max(open, close) (#{max_price}) for label #{inspect(label)}"}
+        {:error,
+         "high price (#{high}) must be greater than or equal to max(open, close) (#{max_price}) for label #{inspect(label)}"}
 
       low > min_price ->
-        {:error, "low price (#{low}) must be less than or equal to min(open, close) (#{min_price}) for label #{inspect(label)}"}
+        {:error,
+         "low price (#{low}) must be less than or equal to min(open, close) (#{min_price}) for label #{inspect(label)}"}
 
       true ->
         :ok
@@ -66,6 +68,7 @@ defmodule Plotto.CandlestickData do
   end
 
   defp validate_item(item) do
-    {:error, "invalid OHLC data item, expected map with :label, :open, :high, :low, :close: #{inspect(item)}"}
+    {:error,
+     "invalid OHLC data item, expected map with :label, :open, :high, :low, :close: #{inspect(item)}"}
   end
 end

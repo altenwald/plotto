@@ -5,8 +5,10 @@ defmodule Plotto.SVG.Renderer.CandlestickChartTest do
   alias Plotto.SVG.Renderer.CandlestickChart, as: Renderer
 
   @data [
-    %{label: "09:00", open: 100, high: 110, low: 95, close: 108}, # bullish
-    %{label: "09:05", open: 108, high: 112, low: 98, close: 102}  # bearish
+    # bullish
+    %{label: "09:00", open: 100, high: 110, low: 95, close: 108},
+    # bearish
+    %{label: "09:05", open: 108, high: 112, low: 98, close: 102}
   ]
 
   test "render/1 returns an <svg> root with one wick line and one body rect per candle" do

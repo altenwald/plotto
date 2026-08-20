@@ -28,7 +28,14 @@ defmodule Plotto.CandlestickDataTest do
 
   test "a valid item may include an :attrs map" do
     data = [
-      %{label: "09:00", open: 100, high: 105, low: 95, close: 102, attrs: %{"phx-click" => "select"}}
+      %{
+        label: "09:00",
+        open: 100,
+        high: 105,
+        low: 95,
+        close: 102,
+        attrs: %{"phx-click" => "select"}
+      }
     ]
 
     assert CandlestickData.validate(data) == :ok
