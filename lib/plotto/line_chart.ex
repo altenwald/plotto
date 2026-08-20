@@ -65,6 +65,9 @@ defmodule Plotto.LineChart do
           legend: :top_left | :top_right | :bottom_left | :bottom_right | nil
         }
 
+  @typedoc """
+  The line chart struct.
+  """
   @type t :: %__MODULE__{data: [series()], opts: options()}
 
   @doc """
@@ -117,11 +120,13 @@ defmodule Plotto.LineChart do
       {:error, "data must not be empty"}
 
   """
+  @spec new([series()], keyword()) :: {:ok, t()} | {:error, String.t()}
   def new(data, opts \\ []), do: Plotto.Chart.Builder.new(__MODULE__, data, opts)
 
   @doc """
   Same as `new/2`, but raises `ArgumentError` on invalid data instead of returning an
   error tuple. See `new/2` for the accepted `data` shape and available options.
   """
+  @spec new!([series()], keyword()) :: t()
   def new!(data, opts \\ []), do: Plotto.Chart.Builder.new!(__MODULE__, data, opts)
 end

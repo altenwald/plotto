@@ -37,11 +37,18 @@ defmodule Plotto.CandlestickChart do
           optional(:attrs) => %{optional(String.t()) => String.t()}
         }
 
+  @typedoc """
+  One candlestick series: optional `:name` and its list of `t:ohlc_item/0` points.
+  """
   @type series :: %{
           required(:name) => String.t() | nil,
           required(:data) => [ohlc_item()]
         }
 
+  @typedoc """
+  Chart options, after defaults have been applied. Stored in this resolved map
+  form on the chart struct (`t:t/0`'s `:opts` field).
+  """
   @type options :: %{
           width: pos_integer(),
           height: pos_integer(),
@@ -52,6 +59,9 @@ defmodule Plotto.CandlestickChart do
           bearish_color: String.t()
         }
 
+  @typedoc """
+  The candlestick chart struct.
+  """
   @type t :: %__MODULE__{data: [series()], opts: options()}
 
   @doc """
