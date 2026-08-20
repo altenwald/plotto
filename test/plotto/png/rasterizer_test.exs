@@ -113,5 +113,42 @@ defmodule Plotto.PNG.RasterizerTest do
 
       refute start_canvas == middle_canvas
     end
+
+    test "text with transform=\"rotate(angle, cx, cy)\" renders rotated pixels" do
+      upright_text =
+        Element.new(
+          "text",
+          %{x: 20, y: 20, "font-size": 12, "text-anchor": "start", fill: "#000000"},
+          ["DATE"]
+        )
+
+      rotated_text =
+        Element.new(
+          "text",
+          %{
+            x: 20,
+            y: 20,
+            "font-size": 12,
+            "text-anchor": "start",
+            transform: "rotate(-45, 20, 20)",
+            fill: "#000000"
+          },
+          ["DATE"]
+        )
+
+      upright_canvas = Rasterizer.rasterize(Element.new("svg", %{}, [upright_text]), 50, 50)
+      rotated_canvas = Rasterizer.rasterize(Element.new("svg", %{}, [rotated_text]), 50, 50)
+
+      refute upright_canvas == rotated_canvas
+
+      color = Canvas.pack(0, 0, 0, 255)
+
+      painted? =
+        for x <- 0..199, y <- 0..199, reduce: false do
+          acc -> acc or Canvas.get_pixel(rotated_canvas, x, y) == color
+        end
+
+      assert painted?
+    end
   end
 end

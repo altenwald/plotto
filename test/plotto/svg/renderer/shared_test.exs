@@ -63,8 +63,8 @@ defmodule Plotto.SVG.Renderer.SharedTest do
     bands = Plotto.Axis.categorical_scale(["Jan"], 100)
     margin = Plotto.Theme.margin()
 
-    # Domain [-50, 50], plot_height = 200. Zero is at y = margin.top + 100
-    elements = Shared.axis_elements(bands, margin, 100, 200, -50, 50)
+    # Domain [-60, 60], plot_height = 200. Zero is at y = margin.top + 100
+    elements = Shared.axis_elements(bands, margin, 100, 200, -60, 60)
     lines = Enum.filter(elements, &(&1.tag == "line"))
 
     # Horizontal baseline is the second line (y1 == y2)
@@ -79,6 +79,7 @@ defmodule Plotto.SVG.Renderer.SharedTest do
       |> Enum.map(fn %{children: [text]} -> text end)
 
     assert "-50" in tick_labels
+    assert "0" in tick_labels
     assert "50" in tick_labels
   end
 
@@ -197,6 +198,62 @@ defmodule Plotto.SVG.Renderer.SharedTest do
         |> Enum.min()
 
       assert min_swatch_y > max_tick_label_y
+    end
+
+    test "expands left margin dynamically when Y-axis ticks are large numbers" do
+      ticks = [0, 500_000, 1_000_000, 1_500_000]
+      margin = Shared.effective_margin(@margin, nil, [], ticks, ["A", "B"])
+
+      assert margin.left > @margin.left
+      assert margin.left >= 70
+    end
+
+    test "expands bottom margin and rotates X labels when labels are longer than 3 characters" do
+      labels = ["2026-08-01", "2026-08-02", "2026-08-03"]
+      margin = Shared.effective_margin(@margin, nil, [], [0, 10], labels)
+
+      assert margin.bottom > @margin.bottom
+      assert margin.bottom >= 65
+    end
+  end
+
+  describe "diagonal x-axis labels" do
+    test "renders transform rotate and reduced font-size when labels > 3 chars" do
+      bands = Plotto.Axis.categorical_scale(["2026-08-01", "2026-08-02"], 200)
+      margin = Plotto.Theme.margin()
+      labels = ["2026-08-01", "2026-08-02"]
+      ticks = [0, 10, 20]
+
+      elements = Shared.axis_elements(bands, margin, 200, 200, 0, 20, ticks, labels)
+
+      x_text_elements =
+        elements
+        |> Enum.filter(&(&1.tag == "text" and hd(&1.children) in labels))
+
+      for elem <- x_text_elements do
+        assert elem.attrs["transform"] =~ "rotate(-45"
+        assert elem.attrs["text-anchor"] == "end"
+        assert elem.attrs["font-size"] == "10"
+      end
+    end
+
+    test "renders horizontal x-axis labels when all labels are <= 3 chars" do
+      bands = Plotto.Axis.categorical_scale(["Q1", "Q2", "Q3"], 200)
+      margin = Plotto.Theme.margin()
+      labels = ["Q1", "Q2", "Q3"]
+      ticks = [0, 10, 20]
+
+      elements = Shared.axis_elements(bands, margin, 200, 200, 0, 20, ticks, labels)
+
+      x_text_elements =
+        elements
+        |> Enum.filter(&(&1.tag == "text" and hd(&1.children) in labels))
+
+      for elem <- x_text_elements do
+        refute Map.has_key?(elem.attrs, "transform")
+        assert elem.attrs["text-anchor"] == "middle"
+        assert elem.attrs["font-size"] == to_string(Plotto.Theme.font_size())
+      end
     end
   end
 end

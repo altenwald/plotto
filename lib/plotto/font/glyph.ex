@@ -3,15 +3,23 @@ defmodule Plotto.Font.Glyph do
 
   alias Plotto.PNG.Canvas
 
-  def draw(canvas, %{outline: []}, _x, _y, _scale, _color), do: canvas
+  def draw(canvas, glyph, x, y, scale, color) do
+    draw(canvas, glyph, x, y, scale, color, nil)
+  end
 
-  def draw(canvas, %{outline: outline}, x, y, scale, color) do
+  def draw(canvas, %{outline: []}, _x, _y, _scale, _color, _rotation), do: canvas
+
+  def draw(canvas, %{outline: outline}, x, y, scale, color, rotation) do
     polygons =
       outline
       |> Enum.map(&flatten_contour/1)
       |> Enum.reject(&(&1 == []))
       |> Enum.map(fn contour ->
-        Enum.map(contour, fn {gx, gy} -> {x + gx * scale, y - gy * scale} end)
+        Enum.map(contour, fn {gx, gy} ->
+          px = x + gx * scale
+          py = y - gy * scale
+          rotate_point(px, py, rotation)
+        end)
       end)
 
     case bounding_box(polygons) do
@@ -29,6 +37,14 @@ defmodule Plotto.Font.Glyph do
           end)
         end)
     end
+  end
+
+  defp rotate_point(px, py, nil), do: {px, py}
+
+  defp rotate_point(px, py, {cos_a, sin_a, pivot_x, pivot_y}) do
+    dx = px - pivot_x
+    dy = py - pivot_y
+    {pivot_x + dx * cos_a - dy * sin_a, pivot_y + dx * sin_a + dy * cos_a}
   end
 
   defp bounding_box([]), do: :empty

@@ -1,6 +1,7 @@
 defmodule Plotto.SVG.Renderer.Shared do
   @moduledoc false
 
+  alias Plotto.Font.{DejaVuSans, TrueType}
   alias Plotto.SVG.Element
   alias Plotto.{Axis, Theme}
 
@@ -45,6 +46,12 @@ defmodule Plotto.SVG.Renderer.Shared do
   end
 
   def axis_elements(bands, margin, plot_width, plot_height, min_value, max_value) do
+    ticks = Axis.ticks(min_value, max_value)
+    labels = Enum.map(bands, & &1.label)
+    axis_elements(bands, margin, plot_width, plot_height, min_value, max_value, ticks, labels)
+  end
+
+  def axis_elements(bands, margin, plot_width, plot_height, min_value, max_value, ticks, labels) do
     zero_y = margin.top + Axis.linear_scale(0, min_value, max_value, plot_height)
 
     y_axis_line =
@@ -65,25 +72,73 @@ defmodule Plotto.SVG.Renderer.Shared do
         "stroke" => Theme.axis_color()
       })
 
-    x_labels = Enum.map(bands, &x_label(&1, margin, plot_height))
+    rotate_x? = rotate_x_labels?(labels)
+    x_font_size = x_label_font_size(rotate_x?)
+    x_labels = Enum.map(bands, &x_label(&1, margin, plot_height, rotate_x?, x_font_size))
 
     y_labels =
       Enum.map(
-        Axis.ticks(min_value, max_value),
+        ticks,
         &y_label(&1, margin, plot_height, min_value, max_value)
       )
 
     [y_axis_line, x_axis_line] ++ x_labels ++ y_labels
   end
 
-  defp x_label(band, margin, plot_height) do
+  def rotate_x_labels?(labels) do
+    Enum.any?(labels, fn label ->
+      String.length(to_string(label)) > 3
+    end)
+  end
+
+  def x_label_font_size(true), do: 10
+  def x_label_font_size(false), do: Theme.font_size()
+
+  def text_width(text, font_size) do
+    font = DejaVuSans.font()
+    scale = font_size / font.units_per_em
+
+    text
+    |> to_string()
+    |> String.to_charlist()
+    |> Enum.map(fn codepoint ->
+      case TrueType.lookup_glyph(font, codepoint) do
+        %{advance_width: w} -> w * scale
+        nil -> font.missing_glyph_advance * scale
+      end
+    end)
+    |> Enum.sum()
+  end
+
+  defp x_label(band, margin, plot_height, true, x_font_size) do
+    x = margin.left + band.x
+    y = margin.top + plot_height + 8
+
     Element.new(
       "text",
       %{
-        "x" => margin.left + band.x,
-        "y" => margin.top + plot_height + Theme.font_size() + 4,
+        "x" => x,
+        "y" => y,
+        "text-anchor" => "end",
+        "transform" => "rotate(-45, #{x}, #{y})",
+        "font-size" => x_font_size,
+        "fill" => Theme.text_color()
+      },
+      [band.label]
+    )
+  end
+
+  defp x_label(band, margin, plot_height, false, x_font_size) do
+    x = margin.left + band.x
+    y = margin.top + plot_height + x_font_size + 4
+
+    Element.new(
+      "text",
+      %{
+        "x" => x,
+        "y" => y,
         "text-anchor" => "middle",
-        "font-size" => Theme.font_size(),
+        "font-size" => x_font_size,
         "fill" => Theme.text_color()
       },
       [band.label]
@@ -106,9 +161,9 @@ defmodule Plotto.SVG.Renderer.Shared do
     )
   end
 
-  defp format_tick(tick) when is_integer(tick), do: Integer.to_string(tick)
+  def format_tick(tick) when is_integer(tick), do: Integer.to_string(tick)
 
-  defp format_tick(tick) do
+  def format_tick(tick) when is_float(tick) do
     rounded = Float.round(tick, 6)
 
     if rounded == trunc(rounded) do
@@ -118,7 +173,48 @@ defmodule Plotto.SVG.Renderer.Shared do
     end
   end
 
+  def format_tick(tick), do: to_string(tick)
+
   def effective_margin(margin, legend, entries) do
+    effective_margin(margin, legend, entries, [], [])
+  end
+
+  def effective_margin(margin, legend, entries, ticks, labels) do
+    font_size = Theme.font_size()
+
+    left_margin =
+      case ticks do
+        [] ->
+          margin.left
+
+        _ ->
+          max_tick_w =
+            ticks
+            |> Enum.map(&format_tick/1)
+            |> Enum.map(&text_width(&1, font_size))
+            |> Enum.max(fn -> 0.0 end)
+
+          max(margin.left, ceil(max_tick_w + 20))
+      end
+
+    rotate_x? = rotate_x_labels?(labels)
+    x_font_size = x_label_font_size(rotate_x?)
+
+    bottom_margin =
+      if rotate_x? and labels != [] do
+        max_label_w =
+          labels
+          |> Enum.map(&text_width(&1, x_font_size))
+          |> Enum.max(fn -> 0.0 end)
+
+        v_proj = (max_label_w + x_font_size) * 0.7071
+        max(margin.bottom, ceil(v_proj + 20))
+      else
+        margin.bottom
+      end
+
+    margin = %{margin | left: left_margin, bottom: bottom_margin}
+
     case length(drawable_entries(legend, entries)) do
       0 ->
         margin

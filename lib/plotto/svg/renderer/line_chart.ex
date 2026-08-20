@@ -10,15 +10,19 @@ defmodule Plotto.SVG.Renderer.LineChart do
     color = Theme.color(opts.colors, 0)
     entries = [{name, color}]
 
-    margin = Shared.effective_margin(Theme.margin(), opts.legend, entries)
+    labels = Enum.map(series_data, & &1.label)
+    values = Enum.map(series_data, & &1.value)
+    raw_min = min(0, Enum.min(values))
+    raw_max = max(0, Enum.max(values))
+    ticks = Axis.ticks(raw_min, raw_max)
+    min_value = List.first(ticks)
+    max_value = List.last(ticks)
+
+    margin = Shared.effective_margin(Theme.margin(), opts.legend, entries, ticks, labels)
     plot_width = opts.width - margin.left - margin.right
     plot_height = opts.height - margin.top - margin.bottom
 
-    labels = Enum.map(series_data, & &1.label)
     bands = Axis.categorical_scale(labels, plot_width)
-    values = Enum.map(series_data, & &1.value)
-    min_value = min(0, Enum.min(values))
-    max_value = max(0, Enum.max(values))
 
     points =
       series_data
@@ -32,7 +36,16 @@ defmodule Plotto.SVG.Renderer.LineChart do
     legend = Shared.legend_elements(entries, opts.legend, margin, opts.width, opts.height)
 
     children =
-      Shared.axis_elements(bands, margin, plot_width, plot_height, min_value, max_value) ++
+      Shared.axis_elements(
+        bands,
+        margin,
+        plot_width,
+        plot_height,
+        min_value,
+        max_value,
+        ticks,
+        labels
+      ) ++
         [build_polyline(points, color)] ++
         Enum.map(points, &build_point_circle(&1, color)) ++
         Shared.title_elements(opts.title, opts.width) ++

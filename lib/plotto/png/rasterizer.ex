@@ -92,14 +92,41 @@ defmodule Plotto.PNG.Rasterizer do
       end
 
     y = num(attrs["y"]) * @supersample
+    rotation = parse_rotation(attrs["transform"], attrs["x"], attrs["y"])
 
     {canvas, _final_x} =
       Enum.reduce(glyphs, {canvas, start_x}, fn glyph, {canvas, x} ->
-        canvas = Glyph.draw(canvas, glyph, x, y, scale, color)
+        canvas = Glyph.draw(canvas, glyph, x, y, scale, color, rotation)
         {canvas, x + glyph.advance_width * scale}
       end)
 
     canvas
+  end
+
+  defp parse_rotation(nil, _attr_x, _attr_y), do: nil
+
+  defp parse_rotation(transform_str, attr_x, attr_y) do
+    case Regex.run(
+           ~r/rotate\(\s*([-\d.]+)(?:[,\s]+([-\d.]+)[,\s]+([-\d.]+))?\s*\)/,
+           transform_str
+         ) do
+      [_, angle_str] ->
+        angle_deg = num(angle_str)
+        angle_rad = angle_deg * :math.pi() / 180.0
+        pivot_x = num(attr_x) * @supersample
+        pivot_y = num(attr_y) * @supersample
+        {:math.cos(angle_rad), :math.sin(angle_rad), pivot_x, pivot_y}
+
+      [_, angle_str, cx_str, cy_str] ->
+        angle_deg = num(angle_str)
+        angle_rad = angle_deg * :math.pi() / 180.0
+        pivot_x = num(cx_str) * @supersample
+        pivot_y = num(cy_str) * @supersample
+        {:math.cos(angle_rad), :math.sin(angle_rad), pivot_x, pivot_y}
+
+      _ ->
+        nil
+    end
   end
 
   defp num(str), do: elem(Float.parse(str), 0)

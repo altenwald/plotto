@@ -16,17 +16,20 @@ defmodule Plotto.SVG.Renderer.CandlestickChart do
         []
       end
 
-    margin = Shared.effective_margin(Theme.margin(), opts.legend, entries)
+    labels = Enum.map(items, & &1.label)
+    all_lows = Enum.map(items, & &1.low)
+    all_highs = Enum.map(items, & &1.high)
+    raw_min = Enum.min(all_lows)
+    raw_max = Enum.max(all_highs)
+    ticks = Axis.ticks(raw_min, raw_max)
+    min_value = List.first(ticks)
+    max_value = List.last(ticks)
+
+    margin = Shared.effective_margin(Theme.margin(), opts.legend, entries, ticks, labels)
     plot_width = opts.width - margin.left - margin.right
     plot_height = opts.height - margin.top - margin.bottom
 
-    labels = Enum.map(items, & &1.label)
     bands = Axis.categorical_scale(labels, plot_width)
-
-    all_lows = Enum.map(items, & &1.low)
-    all_highs = Enum.map(items, & &1.high)
-    min_value = Enum.min(all_lows)
-    max_value = Enum.max(all_highs)
 
     candle_elements =
       items
@@ -36,7 +39,16 @@ defmodule Plotto.SVG.Renderer.CandlestickChart do
     legend = Shared.legend_elements(entries, opts.legend, margin, opts.width, opts.height)
 
     children =
-      Shared.axis_elements(bands, margin, plot_width, plot_height, min_value, max_value) ++
+      Shared.axis_elements(
+        bands,
+        margin,
+        plot_width,
+        plot_height,
+        min_value,
+        max_value,
+        ticks,
+        labels
+      ) ++
         candle_elements ++ Shared.title_elements(opts.title, opts.width) ++ legend
 
     Shared.svg_root(opts.width, opts.height, children)

@@ -56,8 +56,14 @@ defmodule Plotto.AxisTest do
   end
 
   describe "ticks/3" do
-    test "generates evenly spaced ticks spanning negative to positive domain" do
-      assert Axis.ticks(-50, 50, 5) == [-50.0, -30.0, -10.0, 10.0, 30.0, 50.0]
+    test "generates nice round integer ticks spanning domain" do
+      assert Axis.ticks(0, 74, 5) == [0, 20, 40, 60, 80]
+      assert Axis.ticks(0, 100, 5) == [0, 20, 40, 60, 80, 100]
+      assert Axis.ticks(-50, 50, 5) == [-60, -40, -20, 0, 20, 40, 60]
+    end
+
+    test "generates nice decimal ticks for small ranges" do
+      assert Axis.ticks(0.0, 1.0, 5) == [0.0, 0.2, 0.4, 0.6, 0.8, 1.0]
     end
 
     test "returns [min_value] when min_value equals max_value" do

@@ -28,14 +28,47 @@ defmodule Plotto.Axis do
     ticks(0, max_value, 5)
   end
 
-  def ticks(min_value, max_value, count \\ 5)
+  def ticks(min_value, max_value, max_ticks \\ 5)
 
-  def ticks(min_value, max_value, _count) when min_value == max_value do
+  def ticks(min_value, max_value, _max_ticks) when min_value == max_value do
     [min_value]
   end
 
-  def ticks(min_value, max_value, count) do
-    step = (max_value - min_value) / count
-    for i <- 0..count, do: min_value + i * step
+  def ticks(min_value, max_value, max_ticks) when min_value < max_value do
+    range = max_value - min_value
+    step = calculate_nice_step(range, max_ticks)
+    nice_min = Float.floor(min_value / step) * step
+    nice_max = Float.ceil(max_value / step) * step
+
+    is_integer_step = step == trunc(step) and nice_min == trunc(nice_min)
+    n_intervals = round((nice_max - nice_min) / step)
+
+    if is_integer_step do
+      start = trunc(nice_min)
+      s = trunc(step)
+      for i <- 0..n_intervals, do: start + i * s
+    else
+      for i <- 0..n_intervals, do: Float.round(nice_min + i * step, 6)
+    end
+  end
+
+  def ticks(min_value, max_value, max_ticks) when min_value > max_value do
+    ticks(max_value, min_value, max_ticks)
+  end
+
+  defp calculate_nice_step(range, max_ticks) do
+    target_ticks = max(1, max_ticks)
+    raw_step = range / target_ticks
+    e = :math.floor(:math.log10(raw_step))
+    magnitude = :math.pow(10, e)
+    fraction = raw_step / magnitude
+
+    multipliers = [1.0, 2.0, 2.5, 5.0, 10.0, 20.0, 25.0, 50.0, 100.0]
+
+    Enum.find_value(multipliers, 10.0 * magnitude, fn m ->
+      s = m * magnitude
+      intervals = round(Float.ceil(range / s) * s / s)
+      if intervals <= target_ticks and m >= fraction, do: s
+    end) || 10.0 * magnitude
   end
 end

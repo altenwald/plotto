@@ -13,19 +13,32 @@ defmodule Plotto.SVG.Renderer.BarChart do
       |> Enum.with_index()
       |> Enum.map(fn {series, index} -> {series.name, Theme.color(opts.colors, index)} end)
 
-    margin = Shared.effective_margin(Theme.margin(), opts.legend, entries)
+    labels = data |> List.first() |> Map.fetch!(:data) |> Enum.map(& &1.label)
+    {raw_min, raw_max} = calculate_domain(data, mode)
+    ticks = Axis.ticks(raw_min, raw_max)
+    min_value = List.first(ticks)
+    max_value = List.last(ticks)
+
+    margin = Shared.effective_margin(Theme.margin(), opts.legend, entries, ticks, labels)
     plot_width = opts.width - margin.left - margin.right
     plot_height = opts.height - margin.top - margin.bottom
 
-    labels = data |> List.first() |> Map.fetch!(:data) |> Enum.map(& &1.label)
     bands = Axis.categorical_scale(labels, plot_width)
-    {min_value, max_value} = calculate_domain(data, mode)
     bars = build_bars(data, bands, margin, plot_height, min_value, max_value, opts.colors, mode)
 
     legend = Shared.legend_elements(entries, opts.legend, margin, opts.width, opts.height)
 
     children =
-      Shared.axis_elements(bands, margin, plot_width, plot_height, min_value, max_value) ++
+      Shared.axis_elements(
+        bands,
+        margin,
+        plot_width,
+        plot_height,
+        min_value,
+        max_value,
+        ticks,
+        labels
+      ) ++
         bars ++ Shared.title_elements(opts.title, opts.width) ++ legend
 
     Shared.svg_root(opts.width, opts.height, children)

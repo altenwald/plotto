@@ -303,10 +303,8 @@ defmodule Plotto.SVG.Renderer.BarChartTest do
       rects = Enum.filter(svg.children, &(&1.tag == "rect"))
       [pos_rect, neg_rect] = rects
 
-      # Baseline is at y = linear_scale(0, -30, 50, plot_height) + margin.top
-      margin = Plotto.Theme.margin()
-      plot_height = 400 - margin.top - margin.bottom
-      zero_y = margin.top + Plotto.Axis.linear_scale(0, -30, 50, plot_height)
+      [_, x_axis_line] = Enum.filter(svg.children, &(&1.tag == "line"))
+      zero_y = elem(Float.parse(x_axis_line.attrs["y1"]), 0)
 
       pos_y = elem(Float.parse(pos_rect.attrs["y"]), 0)
       pos_height = elem(Float.parse(pos_rect.attrs["height"]), 0)
@@ -331,9 +329,8 @@ defmodule Plotto.SVG.Renderer.BarChartTest do
       rects = Enum.filter(svg.children, &(&1.tag == "rect"))
       [pos_rect, neg_rect] = rects
 
-      margin = Plotto.Theme.margin()
-      plot_height = 400 - margin.top - margin.bottom
-      zero_y = margin.top + Plotto.Axis.linear_scale(0, -25, 40, plot_height)
+      [_, x_axis_line] = Enum.filter(svg.children, &(&1.tag == "line"))
+      zero_y = elem(Float.parse(x_axis_line.attrs["y1"]), 0)
 
       pos_y = elem(Float.parse(pos_rect.attrs["y"]), 0)
       pos_height = elem(Float.parse(pos_rect.attrs["height"]), 0)
