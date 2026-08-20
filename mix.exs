@@ -1,10 +1,13 @@
 defmodule Plotto.MixProject do
   use Mix.Project
 
+  @version "0.1.0"
+  @source_url "https://github.com/altenwald/plotto"
+
   def project do
     [
       app: :plotto,
-      version: "0.1.0",
+      version: @version,
       elixir: "~> 1.17",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
@@ -26,15 +29,16 @@ defmodule Plotto.MixProject do
     [
       files: ~w(lib fonts mix.exs README* LICENSE* .formatter.exs),
       licenses: ["MIT"],
-      links: %{"GitHub" => "https://github.com/altenwald/plotto"}
+      links: %{"GitHub" => @source_url}
     ]
   end
 
   defp docs do
     [
       main: "readme",
-      extras: ["README.md", "LICENSE"],
-      source_url: "https://github.com/altenwald/plotto"
+      source_ref: "v#{@version}",
+      source_url: @source_url,
+      extras: ["README.md", "LICENSE"]
     ]
   end
 
