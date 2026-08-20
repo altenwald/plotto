@@ -17,4 +17,15 @@ defmodule Plotto.SVG.RendererTest do
     assert svg.tag == "svg"
     assert Enum.any?(svg.children, &(&1.tag == "polyline"))
   end
+
+  test "dispatches CandlestickChart to the candlestick chart renderer" do
+    chart =
+      Plotto.CandlestickChart.new!([
+        %{label: "09:00", open: 100, high: 105, low: 95, close: 102}
+      ])
+
+    svg = Renderer.render(chart)
+    assert svg.tag == "svg"
+    assert Enum.any?(svg.children, &(&1.tag == "rect"))
+  end
 end
