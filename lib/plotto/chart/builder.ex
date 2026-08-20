@@ -3,15 +3,18 @@ defmodule Plotto.Chart.Builder do
 
   alias Plotto.{Data, Options}
 
-  def new(module, data, opts) do
-    with :ok <- Data.validate(data),
+  def new(module, data, opts, validator \\ Data) do
+    with :ok <- validator.validate(data),
          :ok <- Options.validate(opts) do
-      {:ok, struct(module, data: data, opts: Options.build(opts))}
+      normalized_data =
+        if function_exported?(validator, :normalize, 1), do: validator.normalize(data), else: data
+
+      {:ok, struct(module, data: normalized_data, opts: Options.build(opts))}
     end
   end
 
-  def new!(module, data, opts) do
-    case new(module, data, opts) do
+  def new!(module, data, opts, validator \\ Data) do
+    case new(module, data, opts, validator) do
       {:ok, chart} -> chart
       {:error, reason} -> raise ArgumentError, reason
     end
