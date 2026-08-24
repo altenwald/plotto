@@ -1,5 +1,10 @@
 # Plotto
 
+[![Hex Package](https://img.shields.io/hexpm/v/plotto.svg)](https://hex.pm/packages/plotto)
+[![Hex Docs](https://img.shields.io/badge/hex-docs-purple.svg)](https://hexdocs.pm/plotto)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/altenwald/plotto/blob/main/LICENSE)
+[![CI](https://github.com/altenwald/plotto/actions/workflows/ci.yml/badge.svg)](https://github.com/altenwald/plotto/actions/workflows/ci.yml)
+
 Plotto is a plot library, 100% Elixir, that's focused on generating beautiful SVG charts and exporting the same chart to PNG when it's needed — including the PNG rasterizer and TrueType font renderer, no external binaries or NIFs required.
 
 It is very useful when you are developing a website and need to integrate SVG charts. Chart data items accept arbitrary HTML/SVG attributes (`phx-click`, `data-*`, etc.), so if you are using Phoenix LiveView you can attach events, actions, and feedback to individual bars/points — without Plotto depending on Phoenix or LiveView in any way.
