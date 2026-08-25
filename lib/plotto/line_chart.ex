@@ -62,7 +62,8 @@ defmodule Plotto.LineChart do
           height: pos_integer(),
           title: String.t() | nil,
           colors: [String.t()],
-          legend: :top_left | :top_right | :bottom_left | :bottom_right | nil
+          legend: :top_left | :top_right | :bottom_left | :bottom_right | nil,
+          tooltip: :data | :native | :title | false | nil | function()
         }
 
   @typedoc """

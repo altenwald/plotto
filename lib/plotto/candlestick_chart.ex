@@ -56,7 +56,8 @@ defmodule Plotto.CandlestickChart do
           colors: [String.t()],
           legend: :top_left | :top_right | :bottom_left | :bottom_right | nil,
           bullish_color: String.t(),
-          bearish_color: String.t()
+          bearish_color: String.t(),
+          tooltip: :data | :native | :title | false | nil | function()
         }
 
   @typedoc """

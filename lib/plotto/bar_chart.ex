@@ -61,7 +61,8 @@ defmodule Plotto.BarChart do
           title: String.t() | nil,
           colors: [String.t()],
           legend: :top_left | :top_right | :bottom_left | :bottom_right | nil,
-          mode: :grouped | :stacked
+          mode: :grouped | :stacked,
+          tooltip: :data | :native | :title | false | nil | function()
         }
 
   @typedoc """

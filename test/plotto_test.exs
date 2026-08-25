@@ -59,7 +59,7 @@ defmodule PlottoTest do
     svg = Plotto.to_svg!(chart)
 
     fills =
-      Regex.scan(~r/<rect fill="(#[0-9A-Fa-f]{6})"/, svg)
+      Regex.scan(~r/<rect[^>]*fill="(#[0-9A-Fa-f]{6})"/, svg)
       |> Enum.map(fn [_, fill] -> fill end)
 
     assert Enum.uniq(fills) == [Plotto.Theme.color(Plotto.Theme.default_colors(), 0)]

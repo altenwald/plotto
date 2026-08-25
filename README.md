@@ -169,6 +169,16 @@ File.write!(Path.join(__DIR__, "candlestick_chart.png"), png)
 
 ![Candlestick chart example](examples/candlestick_chart.png)
 
+## Tooltips and CSS Styling
+
+Plotto charts generate clean SVG elements with standard semantic CSS classes (`plotto-chart`, `plotto-bar`, `plotto-candle`, `plotto-candle-bullish`, `plotto-candle-bearish`, `plotto-point`, `plotto-line`, `plotto-axis`, `plotto-label`, `plotto-legend`), making it easy to style them with Tailwind, CSS variables, or dark mode themes.
+
+All charts support the `:tooltip` option:
+- `:data` (default): Injects `data-title="..."` attributes onto bars, candles, and points for modern, instant JS/LiveView tooltips.
+- `:native` (or `:title`): Injects `<title>...</title>` child elements for zero-JS browser tooltips and accessibility.
+- `false` / `nil`: Disables automatic tooltip injection.
+- `fn item -> ... end` or `fn item, series_name -> ... end`: Formats the tooltip text using a custom callback.
+
 ## Installation
 
 The package can be installed by adding `plotto` to your list of dependencies in `mix.exs`:
@@ -176,7 +186,7 @@ The package can be installed by adding `plotto` to your list of dependencies in 
 ```elixir
 def deps do
   [
-    {:plotto, "~> 0.1.0"}
+    {:plotto, "~> 0.3.0"}
   ]
 end
 ```
@@ -190,3 +200,4 @@ be found at <https://hexdocs.pm/plotto>.
 Plotto is licensed under the [MIT License](LICENSE).
 
 Enjoy!
+

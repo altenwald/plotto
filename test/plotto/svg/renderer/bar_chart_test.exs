@@ -15,6 +15,7 @@ defmodule Plotto.SVG.Renderer.BarChartTest do
     assert svg.tag == "svg"
     rects = Enum.filter(svg.children, &(&1.tag == "rect"))
     assert length(rects) == 2
+    assert Enum.all?(rects, fn r -> Map.has_key?(r.attrs, "data-title") end)
   end
 
   test "all bars in a single series share one color (Theme.color(colors, 0))" do
@@ -338,6 +339,56 @@ defmodule Plotto.SVG.Renderer.BarChartTest do
 
       assert_in_delta pos_y + pos_height, zero_y, 0.01
       assert_in_delta neg_y, zero_y, 0.01
+    end
+
+    test "tooltip: :native renders <title> element inside <rect>" do
+      chart = BarChart.new!(@single_series, tooltip: :native)
+      svg = Renderer.render(chart)
+      rects = Enum.filter(svg.children, &(&1.tag == "rect"))
+
+      assert Enum.all?(rects, fn r ->
+               Enum.any?(r.children, &(&1.tag == "title")) and
+                 not Map.has_key?(r.attrs, "data-title")
+             end)
+    end
+
+    test "tooltip: false renders no tooltip attributes or children" do
+      chart = BarChart.new!(@single_series, tooltip: false)
+      svg = Renderer.render(chart)
+      rects = Enum.filter(svg.children, &(&1.tag == "rect"))
+
+      assert Enum.all?(rects, fn r ->
+               r.children == [] and not Map.has_key?(r.attrs, "data-title")
+             end)
+    end
+
+    test "tooltip: custom function formats data-title" do
+      chart =
+        BarChart.new!(@single_series,
+          tooltip: fn item -> "Custom: #{item.label} = #{item.value}" end
+        )
+
+      svg = Renderer.render(chart)
+      [r1, r2] = Enum.filter(svg.children, &(&1.tag == "rect"))
+
+      assert r1.attrs["data-title"] == "Custom: Jan = 10"
+      assert r2.attrs["data-title"] == "Custom: Feb = 25"
+    end
+
+    test "elements include semantic CSS classes" do
+      chart = BarChart.new!(@single_series, title: "Title", legend: :top_right)
+      svg = Renderer.render(chart)
+
+      assert svg.attrs["class"] == "plotto-chart"
+      rects = Enum.filter(svg.children, &(&1.tag == "rect" and &1.attrs["class"] == "plotto-bar"))
+      assert length(rects) == 2
+      assert Enum.any?(svg.children, &(&1.attrs["class"] == "plotto-title"))
+      assert Enum.any?(svg.children, &(&1.attrs["class"] == "plotto-axis plotto-axis-y"))
+      assert Enum.any?(svg.children, &(&1.attrs["class"] == "plotto-axis plotto-axis-x"))
+      assert Enum.any?(svg.children, &(&1.attrs["class"] == "plotto-label plotto-label-x"))
+      assert Enum.any?(svg.children, &(&1.attrs["class"] == "plotto-label plotto-label-y"))
+      assert Enum.any?(svg.children, &(&1.attrs["class"] == "plotto-legend-swatch"))
+      assert Enum.any?(svg.children, &(&1.attrs["class"] == "plotto-legend-text"))
     end
   end
 end

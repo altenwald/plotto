@@ -17,10 +17,41 @@ defmodule Plotto.SVG.Renderer.Shared do
         "xmlns" => "http://www.w3.org/2000/svg",
         "viewBox" => "0 0 #{width} #{height}",
         "width" => width,
-        "height" => height
+        "height" => height,
+        "class" => "plotto-chart"
       },
       children
     )
+  end
+
+  def format_val(v) when is_float(v) do
+    if v == Float.round(v, 0) do
+      to_string(trunc(v))
+    else
+      :erlang.float_to_binary(v, decimals: 2)
+    end
+  end
+
+  def format_val(v), do: to_string(v)
+
+  def apply_tooltip(attrs, default_title, tooltip_opt, item, series_name) do
+    title_text =
+      cond do
+        is_function(tooltip_opt, 2) -> tooltip_opt.(item, series_name)
+        is_function(tooltip_opt, 1) -> tooltip_opt.(item)
+        true -> default_title
+      end
+
+    case tooltip_opt do
+      opt when opt in [:native, :title] ->
+        {attrs, [Element.new("title", %{}, [to_string(title_text)])]}
+
+      opt when opt in [false, nil] ->
+        {attrs, []}
+
+      _data_default ->
+        {Map.put(attrs, "data-title", to_string(title_text)), []}
+    end
   end
 
   def title_elements(nil, _width), do: []
@@ -34,7 +65,8 @@ defmodule Plotto.SVG.Renderer.Shared do
           "y" => Theme.title_font_size(),
           "text-anchor" => "middle",
           "font-size" => Theme.title_font_size(),
-          "fill" => Theme.text_color()
+          "fill" => Theme.text_color(),
+          "class" => "plotto-title"
         },
         [title]
       )
@@ -60,7 +92,8 @@ defmodule Plotto.SVG.Renderer.Shared do
         "y1" => margin.top,
         "x2" => margin.left,
         "y2" => margin.top + plot_height,
-        "stroke" => Theme.axis_color()
+        "stroke" => Theme.axis_color(),
+        "class" => "plotto-axis plotto-axis-y"
       })
 
     x_axis_line =
@@ -69,7 +102,8 @@ defmodule Plotto.SVG.Renderer.Shared do
         "y1" => zero_y,
         "x2" => margin.left + plot_width,
         "y2" => zero_y,
-        "stroke" => Theme.axis_color()
+        "stroke" => Theme.axis_color(),
+        "class" => "plotto-axis plotto-axis-x"
       })
 
     rotate_x? = rotate_x_labels?(labels)
@@ -122,7 +156,8 @@ defmodule Plotto.SVG.Renderer.Shared do
         "text-anchor" => "end",
         "transform" => "rotate(-45, #{x}, #{y})",
         "font-size" => x_font_size,
-        "fill" => Theme.text_color()
+        "fill" => Theme.text_color(),
+        "class" => "plotto-label plotto-label-x"
       },
       [band.label]
     )
@@ -139,7 +174,8 @@ defmodule Plotto.SVG.Renderer.Shared do
         "y" => y,
         "text-anchor" => "middle",
         "font-size" => x_font_size,
-        "fill" => Theme.text_color()
+        "fill" => Theme.text_color(),
+        "class" => "plotto-label plotto-label-x"
       },
       [band.label]
     )
@@ -155,7 +191,8 @@ defmodule Plotto.SVG.Renderer.Shared do
         "y" => y + Theme.font_size() / 2,
         "text-anchor" => "end",
         "font-size" => Theme.font_size(),
-        "fill" => Theme.text_color()
+        "fill" => Theme.text_color(),
+        "class" => "plotto-label plotto-label-y"
       },
       [format_tick(tick)]
     )
@@ -299,7 +336,8 @@ defmodule Plotto.SVG.Renderer.Shared do
         "y" => y_center - swatch_size / 2,
         "width" => swatch_size,
         "height" => swatch_size,
-        "fill" => color
+        "fill" => color,
+        "class" => "plotto-legend-swatch"
       })
 
     text =
@@ -310,7 +348,8 @@ defmodule Plotto.SVG.Renderer.Shared do
           "y" => y_center + font_size / 2,
           "text-anchor" => text_anchor,
           "font-size" => font_size,
-          "fill" => Theme.text_color()
+          "fill" => Theme.text_color(),
+          "class" => "plotto-legend-text"
         },
         [name]
       )

@@ -64,6 +64,13 @@ defmodule Plotto.SVG.Renderer.CandlestickChart do
     open_y = margin.top + Axis.linear_scale(item.open, min_value, max_value, plot_height)
     close_y = margin.top + Axis.linear_scale(item.close, min_value, max_value, plot_height)
 
+    candle_class =
+      if is_bullish do
+        "plotto-candle plotto-candle-bullish"
+      else
+        "plotto-candle plotto-candle-bearish"
+      end
+
     wick_line =
       Element.new("line", %{
         "x1" => center_x,
@@ -71,7 +78,8 @@ defmodule Plotto.SVG.Renderer.CandlestickChart do
         "x2" => center_x,
         "y2" => low_y,
         "stroke" => color,
-        "stroke-width" => 1.5
+        "stroke-width" => 1.5,
+        "class" => "plotto-candle-wick"
       })
 
     body_width = band.band_width * 0.7
@@ -79,17 +87,24 @@ defmodule Plotto.SVG.Renderer.CandlestickChart do
     body_top_y = min(open_y, close_y)
     body_height = max(abs(close_y - open_y), 1.0)
 
-    body_attrs =
+    default_title =
+      "#{item.label}\nOpen: #{Shared.format_val(item.open)}\nHigh: #{Shared.format_val(item.high)}\nLow: #{Shared.format_val(item.low)}\nClose: #{Shared.format_val(item.close)}"
+
+    base_attrs =
       %{
         "x" => body_x,
         "y" => body_top_y,
         "width" => body_width,
         "height" => body_height,
-        "fill" => color
+        "fill" => color,
+        "class" => candle_class
       }
       |> Map.merge(Map.get(item, :attrs, %{}))
 
-    body_rect = Element.new("rect", body_attrs)
+    {attrs, children} =
+      Shared.apply_tooltip(base_attrs, default_title, opts.tooltip, item, nil)
+
+    body_rect = Element.new("rect", attrs, children)
 
     [wick_line, body_rect]
   end

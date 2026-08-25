@@ -47,7 +47,7 @@ defmodule Plotto.SVG.Renderer.LineChart do
         labels
       ) ++
         [build_polyline(points, color)] ++
-        Enum.map(points, &build_point_circle(&1, color)) ++
+        Enum.map(points, &build_point_circle(&1, color, opts.tooltip, name)) ++
         Shared.title_elements(opts.title, opts.width) ++
         legend
 
@@ -60,18 +60,30 @@ defmodule Plotto.SVG.Renderer.LineChart do
     Element.new("polyline", %{
       "points" => points_attr,
       "fill" => "none",
-      "stroke" => color
+      "stroke" => color,
+      "class" => "plotto-line"
     })
   end
 
   defp fmt(v) when is_float(v), do: :erlang.float_to_binary(v, decimals: 2)
   defp fmt(v), do: to_string(v)
 
-  defp build_point_circle({item, x, y}, color) do
-    attrs =
-      %{"cx" => x, "cy" => y, "r" => 3, "fill" => color}
+  defp build_point_circle({item, x, y}, color, tooltip_opt, series_name) do
+    default_title = "#{item.label}: #{Shared.format_val(item.value)}"
+
+    base_attrs =
+      %{
+        "cx" => x,
+        "cy" => y,
+        "r" => 3,
+        "fill" => color,
+        "class" => "plotto-point"
+      }
       |> Map.merge(Map.get(item, :attrs, %{}))
 
-    Element.new("circle", attrs)
+    {attrs, children} =
+      Shared.apply_tooltip(base_attrs, default_title, tooltip_opt, item, series_name)
+
+    Element.new("circle", attrs, children)
   end
 end

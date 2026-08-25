@@ -24,7 +24,19 @@ defmodule Plotto.SVG.Renderer.BarChart do
     plot_height = opts.height - margin.top - margin.bottom
 
     bands = Axis.categorical_scale(labels, plot_width)
-    bars = build_bars(data, bands, margin, plot_height, min_value, max_value, opts.colors, mode)
+
+    bars =
+      build_bars(
+        data,
+        bands,
+        margin,
+        plot_height,
+        min_value,
+        max_value,
+        opts.colors,
+        mode,
+        opts.tooltip
+      )
 
     legend = Shared.legend_elements(entries, opts.legend, margin, opts.width, opts.height)
 
@@ -45,7 +57,7 @@ defmodule Plotto.SVG.Renderer.BarChart do
   end
 
   defp calculate_domain(data, :grouped) do
-    all_values = data |> Enum.flat_map(& &1.data) |> Enum.map(& &1.value)
+    all_values = data |> Enum.flat_map(fn series -> Enum.map(series.data, & &1.value) end)
     min_value = min(0, Enum.min(all_values))
     max_value = max(0, Enum.max(all_values))
     {min_value, max_value}
@@ -68,7 +80,17 @@ defmodule Plotto.SVG.Renderer.BarChart do
     {min(0, min_neg), max(0, max_pos)}
   end
 
-  defp build_bars(data, bands, margin, plot_height, min_value, max_value, colors, :grouped) do
+  defp build_bars(
+         data,
+         bands,
+         margin,
+         plot_height,
+         min_value,
+         max_value,
+         colors,
+         :grouped,
+         tooltip_opt
+       ) do
     n_series = length(data)
 
     data
@@ -86,14 +108,26 @@ defmodule Plotto.SVG.Renderer.BarChart do
           min_value,
           max_value,
           color,
+          series.name,
           series_index,
-          n_series
+          n_series,
+          tooltip_opt
         )
       )
     end)
   end
 
-  defp build_bars(data, bands, margin, plot_height, min_value, max_value, colors, :stacked) do
+  defp build_bars(
+         data,
+         bands,
+         margin,
+         plot_height,
+         min_value,
+         max_value,
+         colors,
+         :stacked,
+         tooltip_opt
+       ) do
     n_categories = length(bands)
 
     for cat_index <- 0..(n_categories - 1) do
@@ -123,8 +157,10 @@ defmodule Plotto.SVG.Renderer.BarChart do
               min_value,
               max_value,
               color,
+              series.name,
               bottom_val,
-              top_val
+              top_val,
+              tooltip_opt
             )
 
           {[segment | acc_segments], next_pos, next_neg}
@@ -142,8 +178,10 @@ defmodule Plotto.SVG.Renderer.BarChart do
          min_value,
          max_value,
          color,
+         series_name,
          series_index,
-         n_series
+         n_series,
+         tooltip_opt
        ) do
     inner_width = band.band_width * 0.8
     inner_x = margin.left + band.band_x + band.band_width * 0.1
@@ -155,17 +193,28 @@ defmodule Plotto.SVG.Renderer.BarChart do
     top_y = margin.top + min(val_y, zero_y)
     bar_height = abs(val_y - zero_y)
 
-    attrs =
+    default_title =
+      if series_name do
+        "#{series_name}: #{Shared.format_val(item.value)} (#{item.label})"
+      else
+        "#{item.label}: #{Shared.format_val(item.value)}"
+      end
+
+    base_attrs =
       %{
         "x" => bar_x,
         "y" => top_y,
         "width" => sub_width,
         "height" => bar_height,
-        "fill" => color
+        "fill" => color,
+        "class" => "plotto-bar"
       }
       |> Map.merge(Map.get(item, :attrs, %{}))
 
-    Element.new("rect", attrs)
+    {attrs, children} =
+      Shared.apply_tooltip(base_attrs, default_title, tooltip_opt, item, series_name)
+
+    Element.new("rect", attrs, children)
   end
 
   defp build_stacked_segment(
@@ -176,8 +225,10 @@ defmodule Plotto.SVG.Renderer.BarChart do
          min_value,
          max_value,
          color,
+         series_name,
          bottom_val,
-         top_val
+         top_val,
+         tooltip_opt
        ) do
     bar_width = band.band_width * 0.8
     bar_x = margin.left + band.band_x + band.band_width * 0.1
@@ -187,16 +238,27 @@ defmodule Plotto.SVG.Renderer.BarChart do
     top_y = margin.top + min(y1, y2)
     bar_height = abs(y1 - y2)
 
-    attrs =
+    default_title =
+      if series_name do
+        "#{series_name}: #{Shared.format_val(item.value)} (#{item.label})"
+      else
+        "#{item.label}: #{Shared.format_val(item.value)}"
+      end
+
+    base_attrs =
       %{
         "x" => bar_x,
         "y" => top_y,
         "width" => bar_width,
         "height" => bar_height,
-        "fill" => color
+        "fill" => color,
+        "class" => "plotto-bar"
       }
       |> Map.merge(Map.get(item, :attrs, %{}))
 
-    Element.new("rect", attrs)
+    {attrs, children} =
+      Shared.apply_tooltip(base_attrs, default_title, tooltip_opt, item, series_name)
+
+    Element.new("rect", attrs, children)
   end
 end

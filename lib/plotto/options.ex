@@ -16,13 +16,15 @@ defmodule Plotto.Options do
       legend: Keyword.get(opts, :legend),
       mode: Keyword.get(opts, :mode, :grouped),
       bullish_color: Keyword.get(opts, :bullish_color, Theme.bullish_color()),
-      bearish_color: Keyword.get(opts, :bearish_color, Theme.bearish_color())
+      bearish_color: Keyword.get(opts, :bearish_color, Theme.bearish_color()),
+      tooltip: Keyword.get(opts, :tooltip, :data)
     }
   end
 
   def validate(opts) do
     with :ok <- validate_legend(Keyword.get(opts, :legend)),
-         :ok <- validate_mode(Keyword.get(opts, :mode)) do
+         :ok <- validate_mode(Keyword.get(opts, :mode)),
+         :ok <- validate_tooltip(Keyword.get(opts, :tooltip)) do
       :ok
     end
   end
@@ -45,5 +47,15 @@ defmodule Plotto.Options do
     else
       {:error, "invalid bar chart mode, got: #{inspect(mode)}"}
     end
+  end
+
+  defp validate_tooltip(nil), do: :ok
+  defp validate_tooltip(false), do: :ok
+  defp validate_tooltip(mode) when mode in [:data, :native, :title], do: :ok
+  defp validate_tooltip(fun) when is_function(fun, 1) or is_function(fun, 2), do: :ok
+
+  defp validate_tooltip(invalid) do
+    {:error,
+     "invalid tooltip option, expected :data, :native, :title, false, or a 1-2 arity function, got: #{inspect(invalid)}"}
   end
 end
