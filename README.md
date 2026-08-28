@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/logo.png" alt="Plotto Logo" width="160">
+</p>
+
 # Plotto
 
 [![Hex Package](https://img.shields.io/hexpm/v/plotto.svg)](https://hex.pm/packages/plotto)
