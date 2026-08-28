@@ -35,7 +35,8 @@ defmodule Plotto.SVG.Renderer.BarChart do
         max_value,
         opts.colors,
         mode,
-        opts.tooltip
+        opts.tooltip,
+        opts.label
       )
 
     legend = Shared.legend_elements(entries, opts.legend, margin, opts.width, opts.height)
@@ -89,7 +90,8 @@ defmodule Plotto.SVG.Renderer.BarChart do
          max_value,
          colors,
          :grouped,
-         tooltip_opt
+         tooltip_opt,
+         label_opt
        ) do
     n_series = length(data)
 
@@ -100,7 +102,7 @@ defmodule Plotto.SVG.Renderer.BarChart do
 
       series.data
       |> Enum.zip(bands)
-      |> Enum.map(
+      |> Enum.flat_map(
         &build_grouped_bar(
           &1,
           margin,
@@ -111,7 +113,8 @@ defmodule Plotto.SVG.Renderer.BarChart do
           series.name,
           series_index,
           n_series,
-          tooltip_opt
+          tooltip_opt,
+          label_opt
         )
       )
     end)
@@ -126,14 +129,15 @@ defmodule Plotto.SVG.Renderer.BarChart do
          max_value,
          colors,
          :stacked,
-         tooltip_opt
+         tooltip_opt,
+         label_opt
        ) do
     n_categories = length(bands)
 
     for cat_index <- 0..(n_categories - 1) do
       band = Enum.at(bands, cat_index)
 
-      {segments, _pos, _neg} =
+      {segments, pos_total, neg_total} =
         data
         |> Enum.with_index()
         |> Enum.reduce({[], 0, 0}, fn {series, series_index},
@@ -166,7 +170,30 @@ defmodule Plotto.SVG.Renderer.BarChart do
           {[segment | acc_segments], next_pos, next_neg}
         end)
 
-      Enum.reverse(segments)
+      ordered_segments = Enum.reverse(segments)
+
+      category_label = band.label
+      total_val = if pos_total != 0, do: pos_total, else: neg_total
+      summary_item = %{label: category_label, value: total_val}
+      bar_width = band.band_width * 0.8
+      bar_x = margin.left + band.band_x + band.band_width * 0.1
+      label_x = bar_x + bar_width / 2
+      pos_y = Axis.linear_scale(pos_total, min_value, max_value, plot_height)
+      zero_y = Axis.linear_scale(0, min_value, max_value, plot_height)
+      top_y = margin.top + min(pos_y, zero_y)
+      label_y = top_y - 4
+
+      case Shared.label_element(
+             summary_item,
+             label_x,
+             label_y,
+             label_opt,
+             nil,
+             "plotto-label plotto-label-bar"
+           ) do
+        nil -> ordered_segments
+        label_el -> ordered_segments ++ [label_el]
+      end
     end
     |> List.flatten()
   end
@@ -181,7 +208,8 @@ defmodule Plotto.SVG.Renderer.BarChart do
          series_name,
          series_index,
          n_series,
-         tooltip_opt
+         tooltip_opt,
+         label_opt
        ) do
     inner_width = band.band_width * 0.8
     inner_x = margin.left + band.band_x + band.band_width * 0.1
@@ -214,7 +242,22 @@ defmodule Plotto.SVG.Renderer.BarChart do
     {attrs, children} =
       Shared.apply_tooltip(base_attrs, default_title, tooltip_opt, item, series_name)
 
-    Element.new("rect", attrs, children)
+    rect = Element.new("rect", attrs, children)
+
+    label_x = bar_x + sub_width / 2
+    label_y = top_y - 4
+
+    case Shared.label_element(
+           item,
+           label_x,
+           label_y,
+           label_opt,
+           series_name,
+           "plotto-label plotto-label-bar"
+         ) do
+      nil -> [rect]
+      label_el -> [rect, label_el]
+    end
   end
 
   defp build_stacked_segment(

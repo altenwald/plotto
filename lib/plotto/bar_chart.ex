@@ -62,7 +62,8 @@ defmodule Plotto.BarChart do
           colors: [String.t()],
           legend: :top_left | :top_right | :bottom_left | :bottom_right | nil,
           mode: :grouped | :stacked,
-          tooltip: :data | :native | :title | false | nil | function()
+          tooltip: :data | :native | :title | false | nil | function(),
+          label: boolean() | :label | :value | :top | nil | function()
         }
 
   @typedoc """
@@ -94,6 +95,10 @@ defmodule Plotto.BarChart do
     * `:mode` - bar chart layout mode: `:grouped` (bars per series side by side) or
       `:stacked` (bars per series stacked vertically summing the total). Defaults to
       `:grouped`.
+    * `:label` - optional bar label placed immediately above each bar. When `true`
+      (or `:label`), displays the point's `:label`. Can also be `:value` to display the
+      numeric value, or a custom 1-2 arity function `(item)` or `(item, series_name)`.
+      Defaults to `false` (no label above bars).
 
   ## Examples
 

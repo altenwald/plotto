@@ -15,6 +15,7 @@ defmodule Plotto.Theme do
   @axis_color "#CCCCCC"
   @text_color "#333333"
   @font_size 12
+  @label_font_size 10
   @title_font_size 18
   @legend_positions [:top_left, :top_right, :bottom_left, :bottom_right]
   @legend_swatch_size 10
@@ -30,6 +31,7 @@ defmodule Plotto.Theme do
   def axis_color, do: @axis_color
   def text_color, do: @text_color
   def font_size, do: @font_size
+  def label_font_size, do: @label_font_size
   def title_font_size, do: @title_font_size
   def legend_positions, do: @legend_positions
   def legend_swatch_size, do: @legend_swatch_size

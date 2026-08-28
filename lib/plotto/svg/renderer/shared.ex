@@ -54,6 +54,41 @@ defmodule Plotto.SVG.Renderer.Shared do
     end
   end
 
+  def label_text(label_opt, item, series_name) do
+    cond do
+      is_function(label_opt, 2) -> label_opt.(item, series_name)
+      is_function(label_opt, 1) -> label_opt.(item)
+      label_opt == :value -> format_val(item.value)
+      label_opt in [true, :label, :top, :data] -> item.label
+      is_binary(label_opt) -> label_opt
+      true -> nil
+    end
+  end
+
+  def label_element(item, x, y, label_opt, series_name, class_name) do
+    case label_text(label_opt, item, series_name) do
+      nil ->
+        nil
+
+      "" ->
+        nil
+
+      text ->
+        Element.new(
+          "text",
+          %{
+            "x" => x,
+            "y" => y,
+            "text-anchor" => "middle",
+            "font-size" => Theme.label_font_size(),
+            "fill" => Theme.text_color(),
+            "class" => class_name
+          },
+          [to_string(text)]
+        )
+    end
+  end
+
   def title_elements(nil, _width), do: []
 
   def title_elements(title, width) do
@@ -121,7 +156,7 @@ defmodule Plotto.SVG.Renderer.Shared do
 
   def rotate_x_labels?(labels) do
     Enum.any?(labels, fn label ->
-      String.length(to_string(label)) > 3
+      String.length(to_string(label)) > 5
     end)
   end
 

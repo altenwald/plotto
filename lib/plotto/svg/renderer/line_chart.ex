@@ -35,6 +35,9 @@ defmodule Plotto.SVG.Renderer.LineChart do
 
     legend = Shared.legend_elements(entries, opts.legend, margin, opts.width, opts.height)
 
+    point_elements = Enum.map(points, &build_point_circle(&1, color, opts.tooltip, name))
+    label_elements = build_point_labels(points, opts.label, name)
+
     children =
       Shared.axis_elements(
         bands,
@@ -47,11 +50,30 @@ defmodule Plotto.SVG.Renderer.LineChart do
         labels
       ) ++
         [build_polyline(points, color)] ++
-        Enum.map(points, &build_point_circle(&1, color, opts.tooltip, name)) ++
+        point_elements ++
+        label_elements ++
         Shared.title_elements(opts.title, opts.width) ++
         legend
 
     Shared.svg_root(opts.width, opts.height, children)
+  end
+
+  defp build_point_labels(points, label_opt, series_name) do
+    Enum.flat_map(points, fn {item, x, y} ->
+      label_y = y - 7
+
+      case Shared.label_element(
+             item,
+             x,
+             label_y,
+             label_opt,
+             series_name,
+             "plotto-label plotto-label-point"
+           ) do
+        nil -> []
+        label_el -> [label_el]
+      end
+    end)
   end
 
   defp build_polyline(points, color) do

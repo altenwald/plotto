@@ -80,4 +80,31 @@ defmodule Plotto.OptionsTest do
     assert opts.bullish_color == "#00FF00"
     assert opts.bearish_color == "#FF0000"
   end
+
+  test "fills in :label as false by default" do
+    opts = Options.build([])
+    assert opts.label == false
+  end
+
+  test "overrides :label when given" do
+    assert Options.build(label: true).label == true
+    assert Options.build(label: :value).label == :value
+    assert Options.build(labels: true).label == true
+  end
+
+  test "validate/1 returns :ok for valid label options" do
+    assert Options.validate(label: true) == :ok
+    assert Options.validate(label: false) == :ok
+    assert Options.validate(label: :label) == :ok
+    assert Options.validate(label: :value) == :ok
+    assert Options.validate(label: :top) == :ok
+    assert Options.validate(label: fn item -> item.label end) == :ok
+    assert Options.validate(label: fn item, _series -> item.label end) == :ok
+  end
+
+  test "validate/1 returns {:error, reason} for an invalid label option" do
+    assert Options.validate(label: :unknown) ==
+             {:error,
+              "invalid label option, expected true, false, :label, :value, :top, or a 1-2 arity function, got: :unknown"}
+  end
 end

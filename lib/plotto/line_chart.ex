@@ -63,7 +63,8 @@ defmodule Plotto.LineChart do
           title: String.t() | nil,
           colors: [String.t()],
           legend: :top_left | :top_right | :bottom_left | :bottom_right | nil,
-          tooltip: :data | :native | :title | false | nil | function()
+          tooltip: :data | :native | :title | false | nil | function(),
+          label: boolean() | :label | :value | :top | nil | function()
         }
 
   @typedoc """
@@ -90,6 +91,10 @@ defmodule Plotto.LineChart do
     * `:legend` - optional legend position: `:top_left`, `:top_right`, `:bottom_left`,
       or `:bottom_right`. Renders one row for the first series' `:name` only.
       Defaults to `nil` (no legend).
+    * `:label` - optional point label placed immediately above each point. When `true`
+      (or `:label`), displays the point's `:label`. Can also be `:value` to display the
+      numeric value, or a custom 1-2 arity function `(item)` or `(item, series_name)`.
+      Defaults to `false` (no label above points).
 
   ## Examples
 

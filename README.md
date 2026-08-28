@@ -169,15 +169,25 @@ File.write!(Path.join(__DIR__, "candlestick_chart.png"), png)
 
 ![Candlestick chart example](examples/candlestick_chart.png)
 
-## Tooltips and CSS Styling
+## Tooltips, Labels and CSS Styling
 
-Plotto charts generate clean SVG elements with standard semantic CSS classes (`plotto-chart`, `plotto-bar`, `plotto-candle`, `plotto-candle-bullish`, `plotto-candle-bearish`, `plotto-point`, `plotto-line`, `plotto-axis`, `plotto-label`, `plotto-legend`), making it easy to style them with Tailwind, CSS variables, or dark mode themes.
+Plotto charts generate clean SVG elements with standard semantic CSS classes (`plotto-chart`, `plotto-bar`, `plotto-candle`, `plotto-candle-bullish`, `plotto-candle-bearish`, `plotto-point`, `plotto-line`, `plotto-axis`, `plotto-label`, `plotto-label-bar`, `plotto-label-point`, `plotto-legend`), making it easy to style them with Tailwind, CSS variables, or dark mode themes.
+
+### Tooltips
 
 All charts support the `:tooltip` option:
 - `:data` (default): Injects `data-title="..."` attributes onto bars, candles, and points for modern, instant JS/LiveView tooltips.
 - `:native` (or `:title`): Injects `<title>...</title>` child elements for zero-JS browser tooltips and accessibility.
 - `false` / `nil`: Disables automatic tooltip injection.
 - `fn item -> ... end` or `fn item, series_name -> ... end`: Formats the tooltip text using a custom callback.
+
+### Top Labels on Bars and Points
+
+`Plotto.BarChart` and `Plotto.LineChart` support placing labels immediately above bars and line points via the `:label` option:
+- `true` (or `:label`): Displays each point's category label (or stacked column category) above the element.
+- `:value`: Displays formatted numeric values above each bar/point.
+- `fn item -> ... end` or `fn item, series_name -> ... end`: Custom callback returning the string to display (e.g. `fn item -> "#{item.value}%" end`). Returning `nil` or `false` skips the label for that item.
+- `false` (default): No labels rendered above elements.
 
 ## Installation
 
@@ -186,7 +196,7 @@ The package can be installed by adding `plotto` to your list of dependencies in 
 ```elixir
 def deps do
   [
-    {:plotto, "~> 0.3.0"}
+    {:plotto, "~> 0.4.0"}
   ]
 end
 ```

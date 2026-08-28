@@ -17,14 +17,16 @@ defmodule Plotto.Options do
       mode: Keyword.get(opts, :mode, :grouped),
       bullish_color: Keyword.get(opts, :bullish_color, Theme.bullish_color()),
       bearish_color: Keyword.get(opts, :bearish_color, Theme.bearish_color()),
-      tooltip: Keyword.get(opts, :tooltip, :data)
+      tooltip: Keyword.get(opts, :tooltip, :data),
+      label: Keyword.get(opts, :label, Keyword.get(opts, :labels, false))
     }
   end
 
   def validate(opts) do
     with :ok <- validate_legend(Keyword.get(opts, :legend)),
          :ok <- validate_mode(Keyword.get(opts, :mode)),
-         :ok <- validate_tooltip(Keyword.get(opts, :tooltip)) do
+         :ok <- validate_tooltip(Keyword.get(opts, :tooltip)),
+         :ok <- validate_label(Keyword.get(opts, :label, Keyword.get(opts, :labels))) do
       :ok
     end
   end
@@ -57,5 +59,16 @@ defmodule Plotto.Options do
   defp validate_tooltip(invalid) do
     {:error,
      "invalid tooltip option, expected :data, :native, :title, false, or a 1-2 arity function, got: #{inspect(invalid)}"}
+  end
+
+  defp validate_label(nil), do: :ok
+  defp validate_label(false), do: :ok
+  defp validate_label(true), do: :ok
+  defp validate_label(mode) when mode in [:label, :value, :top, :data], do: :ok
+  defp validate_label(fun) when is_function(fun, 1) or is_function(fun, 2), do: :ok
+
+  defp validate_label(invalid) do
+    {:error,
+     "invalid label option, expected true, false, :label, :value, :top, or a 1-2 arity function, got: #{inspect(invalid)}"}
   end
 end

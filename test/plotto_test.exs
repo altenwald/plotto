@@ -241,5 +241,25 @@ defmodule PlottoTest do
       assert {:ok, png} = Plotto.to_png(chart)
       assert binary_part(png, 0, 8) == @png_signature
     end
+
+    test "charts with label: true render SVG labels and PNG without error" do
+      data = [
+        %{name: "Revenue", data: [%{label: "Q1", value: 100}, %{label: "Q2", value: 150}]}
+      ]
+
+      bar_chart = BarChart.new!(data, label: true)
+      assert {:ok, bar_svg} = Plotto.to_svg(bar_chart)
+      assert bar_svg =~ "plotto-label plotto-label-bar"
+      assert bar_svg =~ "Q1"
+      assert {:ok, bar_png} = Plotto.to_png(bar_chart)
+      assert binary_part(bar_png, 0, 8) == @png_signature
+
+      line_chart = LineChart.new!(data, label: true)
+      assert {:ok, line_svg} = Plotto.to_svg(line_chart)
+      assert line_svg =~ "plotto-label plotto-label-point"
+      assert line_svg =~ "Q1"
+      assert {:ok, line_png} = Plotto.to_png(line_chart)
+      assert binary_part(line_png, 0, 8) == @png_signature
+    end
   end
 end

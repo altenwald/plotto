@@ -391,4 +391,92 @@ defmodule Plotto.SVG.Renderer.BarChartTest do
       assert Enum.any?(svg.children, &(&1.attrs["class"] == "plotto-legend-text"))
     end
   end
+
+  describe "label option" do
+    test "label: true renders a text element immediately above each bar" do
+      chart = BarChart.new!(@single_series, label: true)
+      svg = Renderer.render(chart)
+
+      labels =
+        Enum.filter(
+          svg.children,
+          &(&1.tag == "text" and &1.attrs["class"] == "plotto-label plotto-label-bar")
+        )
+
+      assert length(labels) == 2
+
+      [l1, l2] = labels
+      assert l1.children == ["Jan"]
+      assert l2.children == ["Feb"]
+      assert l1.attrs["text-anchor"] == "middle"
+      assert l2.attrs["text-anchor"] == "middle"
+
+      rects = Enum.filter(svg.children, &(&1.tag == "rect" and &1.attrs["class"] == "plotto-bar"))
+      [r1, r2] = rects
+
+      # Label y is 4px above the bar's top_y
+      assert_in_delta String.to_float(l1.attrs["y"]), String.to_float(r1.attrs["y"]) - 4, 0.01
+      assert_in_delta String.to_float(l2.attrs["y"]), String.to_float(r2.attrs["y"]) - 4, 0.01
+    end
+
+    test "label: :value renders formatted numeric values above each bar" do
+      chart = BarChart.new!(@single_series, label: :value)
+      svg = Renderer.render(chart)
+
+      labels =
+        Enum.filter(
+          svg.children,
+          &(&1.tag == "text" and &1.attrs["class"] == "plotto-label plotto-label-bar")
+        )
+
+      assert length(labels) == 2
+      assert Enum.map(labels, & &1.children) == [["10"], ["25"]]
+    end
+
+    test "label: custom function renders custom text above each bar" do
+      chart = BarChart.new!(@single_series, label: fn item -> "#{item.label}: #{item.value}€" end)
+      svg = Renderer.render(chart)
+
+      labels =
+        Enum.filter(
+          svg.children,
+          &(&1.tag == "text" and &1.attrs["class"] == "plotto-label plotto-label-bar")
+        )
+
+      assert length(labels) == 2
+      assert Enum.map(labels, & &1.children) == [["Jan: 10€"], ["Feb: 25€"]]
+    end
+
+    test "label: false renders no bar labels" do
+      chart = BarChart.new!(@single_series, label: false)
+      svg = Renderer.render(chart)
+
+      labels =
+        Enum.filter(
+          svg.children,
+          &(&1.tag == "text" and &1.attrs["class"] == "plotto-label plotto-label-bar")
+        )
+
+      assert labels == []
+    end
+
+    test "label: true in stacked mode renders label above the stacked column" do
+      data = [
+        %{name: "A", data: [%{label: "Jan", value: 10}, %{label: "Feb", value: 20}]},
+        %{name: "B", data: [%{label: "Jan", value: 15}, %{label: "Feb", value: 25}]}
+      ]
+
+      chart = BarChart.new!(data, mode: :stacked, label: true)
+      svg = Renderer.render(chart)
+
+      labels =
+        Enum.filter(
+          svg.children,
+          &(&1.tag == "text" and &1.attrs["class"] == "plotto-label plotto-label-bar")
+        )
+
+      assert length(labels) == 2
+      assert Enum.map(labels, & &1.children) == [["Jan"], ["Feb"]]
+    end
+  end
 end
