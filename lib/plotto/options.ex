@@ -18,7 +18,11 @@ defmodule Plotto.Options do
       bullish_color: Keyword.get(opts, :bullish_color, Theme.bullish_color()),
       bearish_color: Keyword.get(opts, :bearish_color, Theme.bearish_color()),
       tooltip: Keyword.get(opts, :tooltip, :data),
-      label: Keyword.get(opts, :label, Keyword.get(opts, :labels, false))
+      label: Keyword.get(opts, :label, Keyword.get(opts, :labels, false)),
+      line_styles:
+        normalize_line_styles(Keyword.get(opts, :line_styles, Keyword.get(opts, :line_style, []))),
+      stroke_width:
+        Keyword.get(opts, :stroke_width, Keyword.get(opts, :line_width, Theme.stroke_width()))
     }
   end
 
@@ -26,8 +30,10 @@ defmodule Plotto.Options do
     with :ok <- validate_legend(Keyword.get(opts, :legend)),
          :ok <- validate_mode(Keyword.get(opts, :mode)),
          :ok <- validate_tooltip(Keyword.get(opts, :tooltip)),
-         :ok <- validate_label(Keyword.get(opts, :label, Keyword.get(opts, :labels))) do
-      :ok
+         :ok <- validate_label(Keyword.get(opts, :label, Keyword.get(opts, :labels))),
+         :ok <-
+           validate_line_styles(Keyword.get(opts, :line_styles, Keyword.get(opts, :line_style))) do
+      validate_stroke_width(Keyword.get(opts, :stroke_width, Keyword.get(opts, :line_width)))
     end
   end
 
@@ -70,5 +76,35 @@ defmodule Plotto.Options do
   defp validate_label(invalid) do
     {:error,
      "invalid label option, expected true, false, :label, :value, :top, or a 1-2 arity function, got: #{inspect(invalid)}"}
+  end
+
+  defp normalize_line_styles(styles) when is_list(styles), do: styles
+  defp normalize_line_styles(style) when is_atom(style) or is_binary(style), do: [style]
+  defp normalize_line_styles(_), do: []
+
+  defp validate_line_styles(nil), do: :ok
+
+  defp validate_line_styles(styles) when is_list(styles) do
+    if Enum.all?(styles, &(&1 in [:solid, :dashed, :dotted] or is_binary(&1) or is_nil(&1))) do
+      :ok
+    else
+      {:error,
+       "invalid line_styles option, expected a list of :solid, :dashed, :dotted, nil, or string dash patterns"}
+    end
+  end
+
+  defp validate_line_styles(style) when is_atom(style) or is_binary(style) do
+    validate_line_styles([style])
+  end
+
+  defp validate_line_styles(invalid) do
+    {:error, "invalid line_styles option, expected a list, got: #{inspect(invalid)}"}
+  end
+
+  defp validate_stroke_width(nil), do: :ok
+  defp validate_stroke_width(w) when is_number(w) and w > 0, do: :ok
+
+  defp validate_stroke_width(invalid) do
+    {:error, "invalid stroke_width option, expected a positive number, got: #{inspect(invalid)}"}
   end
 end

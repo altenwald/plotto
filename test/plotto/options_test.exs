@@ -107,4 +107,28 @@ defmodule Plotto.OptionsTest do
              {:error,
               "invalid label option, expected true, false, :label, :value, :top, or a 1-2 arity function, got: :unknown"}
   end
+
+  test "validate/1 returns :ok for valid line_styles" do
+    assert Options.validate(line_styles: [:solid, :dashed, :dotted, "6,4"]) == :ok
+    assert Options.validate(line_style: :dotted) == :ok
+  end
+
+  test "validate/1 returns {:error, reason} for invalid line_styles" do
+    assert Options.validate(line_styles: [:wavy]) ==
+             {:error,
+              "invalid line_styles option, expected a list of :solid, :dashed, :dotted, nil, or string dash patterns"}
+  end
+
+  test "validate/1 returns :ok for valid stroke_width" do
+    assert Options.validate(stroke_width: 2) == :ok
+    assert Options.validate(line_width: 1.5) == :ok
+  end
+
+  test "validate/1 returns {:error, reason} for invalid stroke_width" do
+    assert Options.validate(stroke_width: -1) ==
+             {:error, "invalid stroke_width option, expected a positive number, got: -1"}
+
+    assert Options.validate(stroke_width: "thick") ==
+             {:error, ~s(invalid stroke_width option, expected a positive number, got: "thick")}
+  end
 end

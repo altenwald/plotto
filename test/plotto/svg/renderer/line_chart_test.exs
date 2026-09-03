@@ -89,7 +89,7 @@ defmodule Plotto.SVG.Renderer.LineChartTest do
     assert legend_y2 == base_y2 - Plotto.Theme.legend_row_height()
   end
 
-  test "a multi-series chart still renders (only the first series' line/points, no crash)" do
+  test "a multi-series chart renders polylines and points for all series" do
     data = [
       %{name: "Revenue", data: [%{label: "Jan", value: 10}, %{label: "Feb", value: 25}]},
       %{name: "Costs", data: [%{label: "Jan", value: 5}, %{label: "Feb", value: 8}]}
@@ -98,11 +98,11 @@ defmodule Plotto.SVG.Renderer.LineChartTest do
     chart = LineChart.new!(data)
     svg = Renderer.render(chart)
 
-    assert length(Enum.filter(svg.children, &(&1.tag == "polyline"))) == 1
-    assert length(Enum.filter(svg.children, &(&1.tag == "circle"))) == 2
+    assert length(Enum.filter(svg.children, &(&1.tag == "polyline"))) == 2
+    assert length(Enum.filter(svg.children, &(&1.tag == "circle"))) == 4
   end
 
-  test "a multi-series chart with :legend set renders exactly one legend row (the first series')" do
+  test "a multi-series chart with :legend set renders legend rows for all series" do
     data = [
       %{name: "Revenue", data: [%{label: "Jan", value: 10}]},
       %{name: "Costs", data: [%{label: "Jan", value: 5}]},
@@ -113,12 +113,58 @@ defmodule Plotto.SVG.Renderer.LineChartTest do
     svg = Renderer.render(chart)
 
     texts =
-      svg.children
-      |> Enum.filter(&(&1.tag == "text"))
-      |> Enum.filter(&(&1.children in [["Revenue"], ["Costs"], ["Other"]]))
+      Enum.filter(
+        svg.children,
+        &(&1.tag == "text" and &1.children in [["Revenue"], ["Costs"], ["Other"]])
+      )
 
-    assert length(texts) == 1
-    assert hd(texts).children == ["Revenue"]
+    assert length(texts) == 3
+    rendered_names = Enum.map(texts, &hd(&1.children))
+    assert rendered_names == ["Revenue", "Costs", "Other"]
+  end
+
+  test "renders dashed polyline when series has dashed: true or stroke_dasharray" do
+    data = [
+      %{name: "Solid", data: [%{label: "Jan", value: 10}, %{label: "Feb", value: 20}]},
+      %{
+        name: "Dashed",
+        dashed: true,
+        data: [%{label: "Jan", value: 15}, %{label: "Feb", value: 25}]
+      }
+    ]
+
+    chart = LineChart.new!(data)
+    svg = Renderer.render(chart)
+
+    polylines = Enum.filter(svg.children, &(&1.tag == "polyline"))
+    assert length(polylines) == 2
+    solid = Enum.at(polylines, 0)
+    dashed = Enum.at(polylines, 1)
+
+    refute Map.has_key?(solid.attrs, "stroke-dasharray")
+    assert dashed.attrs["stroke-dasharray"] == "6,4"
+  end
+
+  test "renders series spanning subsets of categories across unified axis" do
+    data = [
+      %{name: "Short", data: [%{label: "1", value: 10}, %{label: "2", value: 20}]},
+      %{
+        name: "Long",
+        data: [%{label: "1", value: 5}, %{label: "2", value: 15}, %{label: "3", value: 25}]
+      }
+    ]
+
+    chart = LineChart.new!(data)
+    svg = Renderer.render(chart)
+
+    polylines = Enum.filter(svg.children, &(&1.tag == "polyline"))
+    assert length(polylines) == 2
+    short_polyline = Enum.at(polylines, 0)
+    long_polyline = Enum.at(polylines, 1)
+
+    assert length(String.split(short_polyline.attrs["points"], " ")) == 2
+    assert length(String.split(long_polyline.attrs["points"], " ")) == 3
+    assert length(Enum.filter(svg.children, &(&1.tag == "circle"))) == 5
   end
 
   test "renders negative values with points and polyline below the zero baseline" do
@@ -216,6 +262,61 @@ defmodule Plotto.SVG.Renderer.LineChartTest do
         )
 
       assert labels == []
+    end
+
+    test "renders line swatches with solid or dashed styles in the legend" do
+      data = [
+        %{name: "Solid", data: [%{label: "Jan", value: 10}]},
+        %{name: "Dashed", dashed: true, data: [%{label: "Jan", value: 20}]}
+      ]
+
+      chart = LineChart.new!(data, legend: :top_right)
+      svg = Renderer.render(chart)
+
+      swatches =
+        Enum.filter(svg.children, &(&1.attrs["class"] == "plotto-legend-swatch"))
+
+      assert length(swatches) == 2
+      [solid_swatch, dashed_swatch] = swatches
+
+      assert solid_swatch.tag == "line"
+      refute Map.has_key?(solid_swatch.attrs, "stroke-dasharray")
+
+      assert dashed_swatch.tag == "line"
+      assert dashed_swatch.attrs["stroke-dasharray"] == "4,2"
+    end
+
+    test "renders dotted line and dotted legend swatch" do
+      data = [
+        %{name: "Dotted", dotted: true, data: [%{label: "Jan", value: 15}]}
+      ]
+
+      chart = LineChart.new!(data, legend: :top_right)
+      svg = Renderer.render(chart)
+
+      [polyline] = Enum.filter(svg.children, &(&1.tag == "polyline"))
+      assert polyline.attrs["stroke-dasharray"] == "2,4"
+
+      [swatch] = Enum.filter(svg.children, &(&1.attrs["class"] == "plotto-legend-swatch"))
+      assert swatch.tag == "line"
+      assert swatch.attrs["stroke-dasharray"] == "2,3"
+    end
+
+    test "configures stroke_width globally and per-series" do
+      data = [
+        %{name: "DefaultThick", data: [%{label: "Jan", value: 10}]},
+        %{name: "CustomThick", stroke_width: 4, data: [%{label: "Jan", value: 20}]}
+      ]
+
+      chart = LineChart.new!(data, stroke_width: 2.5, legend: :top_right)
+      svg = Renderer.render(chart)
+
+      polylines = Enum.filter(svg.children, &(&1.tag == "polyline"))
+      assert length(polylines) == 2
+      [p1, p2] = polylines
+
+      assert p1.attrs["stroke-width"] == "2.50"
+      assert p2.attrs["stroke-width"] == "4"
     end
   end
 end

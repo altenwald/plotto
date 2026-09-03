@@ -60,7 +60,16 @@ defmodule Plotto.BarChart do
           height: pos_integer(),
           title: String.t() | nil,
           colors: [String.t()],
-          legend: :top_left | :top_right | :bottom_left | :bottom_right | nil,
+          legend:
+            :top_left
+            | :left_top
+            | :top_right
+            | :right_top
+            | :bottom_left
+            | :left_bottom
+            | :bottom_right
+            | :right_bottom
+            | nil,
           mode: :grouped | :stacked,
           tooltip: :data | :native | :title | false | nil | function(),
           label: boolean() | :label | :value | :top | nil | function()
@@ -89,9 +98,10 @@ defmodule Plotto.BarChart do
     * `:colors` - list of `"#RRGGBB"` hex color strings, cycled **per series** — all
       bars within one series share the same color (`Theme.color(colors, series_index)`).
       Defaults to `["#4E79A7", "#F28E2B", "#E15759", "#76B7B2", "#59A14F"]`.
-    * `:legend` - optional legend position: `:top_left`, `:top_right`, `:bottom_left`,
-      or `:bottom_right`. Renders one swatch+name row per series (using each series'
-      `:name`), stacked vertically. Defaults to `nil` (no legend).
+    * `:legend` - optional legend position: `:top_left`, `:left_top`, `:top_right`,
+      `:right_top`, `:bottom_left`, `:left_bottom`, `:bottom_right`, or `:right_bottom`.
+      Renders one swatch+name row per series (using each series' `:name`). Defaults to
+      `nil` (no legend).
     * `:mode` - bar chart layout mode: `:grouped` (bars per series side by side) or
       `:stacked` (bars per series stacked vertically summing the total). Defaults to
       `:grouped`.

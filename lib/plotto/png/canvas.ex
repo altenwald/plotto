@@ -66,7 +66,9 @@ defmodule Plotto.PNG.Canvas do
     end)
   end
 
-  def draw_line(canvas, x0, y0, x1, y1, color, width \\ 1) do
+  def draw_line(canvas, x0, y0, x1, y1, color, width \\ 1, dash_pattern \\ nil)
+
+  def draw_line(canvas, x0, y0, x1, y1, color, width, nil) do
     half = width / 2
 
     if abs(x1 - x0) >= abs(y1 - y0) do
@@ -74,6 +76,14 @@ defmodule Plotto.PNG.Canvas do
     else
       draw_line_y_major(canvas, x0, y0, x1, y1, color, half)
     end
+  end
+
+  def draw_line(canvas, x0, y0, x1, y1, color, width, []) do
+    draw_line(canvas, x0, y0, x1, y1, color, width, nil)
+  end
+
+  def draw_line(canvas, x0, y0, x1, y1, color, width, dash_pattern) when is_list(dash_pattern) do
+    draw_polyline(canvas, [{x0, y0}, {x1, y1}], color, width, dash_pattern)
   end
 
   defp draw_line_x_major(canvas, x0, y0, x1, y1, color, half) do
@@ -106,12 +116,86 @@ defmodule Plotto.PNG.Canvas do
     end)
   end
 
-  def draw_polyline(canvas, points, color, width \\ 1) do
+  def draw_polyline(canvas, points, color, width \\ 1, dash_pattern \\ nil)
+
+  def draw_polyline(canvas, points, color, width, nil) do
     points
     |> Enum.chunk_every(2, 1, :discard)
-    |> Enum.reduce(canvas, fn [{x0, y0}, {x1, y1}], canvas ->
-      draw_line(canvas, x0, y0, x1, y1, color, width)
+    |> Enum.reduce(canvas, fn [{x0, y0}, {x1, y1}], acc ->
+      draw_line(acc, x0, y0, x1, y1, color, width, nil)
     end)
+  end
+
+  def draw_polyline(canvas, points, color, width, []) do
+    draw_polyline(canvas, points, color, width, nil)
+  end
+
+  def draw_polyline(canvas, points, color, width, dash_pattern) when is_list(dash_pattern) do
+    cycle_length = Enum.sum(dash_pattern)
+
+    if cycle_length <= 0 do
+      draw_polyline(canvas, points, color, width, nil)
+    else
+      segments = Enum.chunk_every(points, 2, 1, :discard)
+      pattern_steps = build_pattern_steps(dash_pattern)
+
+      {final_canvas, _final_offset} =
+        Enum.reduce(segments, {canvas, 0.0}, fn [{x0, y0}, {x1, y1}], {acc, offset} ->
+          dx = x1 - x0
+          dy = y1 - y0
+          seg_len = :math.sqrt(dx * dx + dy * dy)
+
+          if seg_len == 0 do
+            {acc, offset}
+          else
+            end_offset = offset + seg_len
+
+            dash_ranges =
+              calculate_dash_intervals(offset, end_offset, pattern_steps, cycle_length)
+
+            acc_drawn =
+              Enum.reduce(dash_ranges, acc, fn {d_start, d_end}, c ->
+                t0 = (d_start - offset) / seg_len
+                t1 = (d_end - offset) / seg_len
+                sx0 = x0 + t0 * dx
+                sy0 = y0 + t0 * dy
+                sx1 = x0 + t1 * dx
+                sy1 = y0 + t1 * dy
+                draw_line(c, sx0, sy0, sx1, sy1, color, width, nil)
+              end)
+
+            new_offset = end_offset - Float.floor(end_offset / cycle_length) * cycle_length
+            {acc_drawn, new_offset}
+          end
+        end)
+
+      final_canvas
+    end
+  end
+
+  defp calculate_dash_intervals(start_d, end_d, pattern_steps, cycle_length) do
+    k0 = floor(start_d / cycle_length)
+    k1 = floor(end_d / cycle_length)
+
+    for k <- k0..k1,
+        {offset, len, true} <- pattern_steps,
+        dash_start = k * cycle_length + offset,
+        dash_end = dash_start + len,
+        i_start = max(start_d, dash_start),
+        i_end = min(end_d, dash_end),
+        i_start < i_end do
+      {i_start, i_end}
+    end
+  end
+
+  defp build_pattern_steps(pattern) do
+    {steps, _total} =
+      Enum.reduce(Enum.with_index(pattern), {[], 0.0}, fn {len, idx}, {acc, offset} ->
+        is_dash? = rem(idx, 2) == 0
+        {acc ++ [{offset, len, is_dash?}], offset + len}
+      end)
+
+    steps
   end
 
   def downsample(%__MODULE__{width: width, height: height} = canvas, factor) do

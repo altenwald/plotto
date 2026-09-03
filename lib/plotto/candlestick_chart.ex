@@ -54,7 +54,16 @@ defmodule Plotto.CandlestickChart do
           height: pos_integer(),
           title: String.t() | nil,
           colors: [String.t()],
-          legend: :top_left | :top_right | :bottom_left | :bottom_right | nil,
+          legend:
+            :top_left
+            | :left_top
+            | :top_right
+            | :right_top
+            | :bottom_left
+            | :left_bottom
+            | :bottom_right
+            | :right_bottom
+            | nil,
           bullish_color: String.t(),
           bearish_color: String.t(),
           tooltip: :data | :native | :title | false | nil | function()
@@ -78,8 +87,9 @@ defmodule Plotto.CandlestickChart do
     * `:title` - optional chart title centered above the plot. Defaults to `nil`.
     * `:bullish_color` - hex color for bullish candles (`close >= open`). Defaults to `"#26A69A"`.
     * `:bearish_color` - hex color for bearish candles (`close < open`). Defaults to `"#EF5350"`.
-    * `:legend` - optional legend position: `:top_left`, `:top_right`, `:bottom_left`,
-      or `:bottom_right`. Defaults to `nil`.
+    * `:legend` - optional legend position: `:top_left`, `:left_top`, `:top_right`,
+      `:right_top`, `:bottom_left`, `:left_bottom`, `:bottom_right`, or `:right_bottom`.
+      Defaults to `nil`.
 
   """
   @spec new([ohlc_item()] | [series()], keyword()) :: {:ok, t()} | {:error, String.t()}

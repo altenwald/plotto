@@ -108,9 +108,6 @@ defmodule Plotto.Font.Glyph do
     end
   end
 
-  defp build_segments([]), do: []
-  defp build_segments([_last]), do: []
-
   defp build_segments([p1, p2]) when p1.on_curve and p2.on_curve do
     [{p1.x, p1.y}, {p2.x, p2.y}]
   end
@@ -122,6 +119,8 @@ defmodule Plotto.Font.Glyph do
   defp build_segments([p1, p2, p3 | rest]) when p1.on_curve and not p2.on_curve and p3.on_curve do
     flatten_quad_bezier(p1, p2, p3, 8) ++ build_segments([p3 | rest])
   end
+
+  defp build_segments(_), do: []
 
   defp flatten_quad_bezier(p0, p1, p2, steps) do
     for i <- 0..(steps - 1) do

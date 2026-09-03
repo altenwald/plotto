@@ -287,19 +287,54 @@ defmodule Plotto.SVG.Renderer.Shared do
 
     margin = %{margin | left: left_margin, bottom: bottom_margin}
 
-    case length(drawable_entries(legend, entries)) do
-      0 ->
+    case drawable_entries(legend, entries) do
+      [] ->
         margin
 
-      n ->
+      drawable ->
+        n = length(drawable)
+
         case legend do
           position when position in [:top_left, :top_right] ->
             Map.update!(margin, :top, &(&1 + Theme.legend_row_height() * n))
 
           position when position in [:bottom_left, :bottom_right] ->
             Map.update!(margin, :bottom, &(&1 + Theme.legend_row_height() * n))
+
+          position when position in [:right_top, :right_bottom] ->
+            content_w = legend_content_width(drawable, font_size)
+            Map.update!(margin, :right, &(&1 + content_w + 16))
+
+          position when position in [:left_top, :left_bottom] ->
+            content_w = legend_content_width(drawable, font_size)
+            Map.update!(margin, :left, &(&1 + content_w + 16))
+
+          _ ->
+            margin
         end
     end
+  end
+
+  defp entry_swatch_width({_name, _color, %{type: :line}}), do: 18
+  defp entry_swatch_width(_), do: Theme.legend_swatch_size()
+
+  defp legend_content_width(drawable, font_size) do
+    gap = Theme.legend_gap()
+
+    max_swatch_w =
+      drawable
+      |> Enum.map(&entry_swatch_width/1)
+      |> Enum.max(fn -> Theme.legend_swatch_size() end)
+
+    max_text_w =
+      drawable
+      |> Enum.map(fn
+        {name, _color} -> text_width(name, font_size)
+        {name, _color, _meta} -> text_width(name, font_size)
+      end)
+      |> Enum.max(fn -> 0.0 end)
+
+    ceil(max_swatch_w + gap + max_text_w)
   end
 
   def legend_elements(entries, legend, margin, width, height) do
@@ -308,8 +343,8 @@ defmodule Plotto.SVG.Renderer.Shared do
 
     drawable
     |> Enum.with_index()
-    |> Enum.flat_map(fn {{name, color}, i} ->
-      legend_row(name, color, legend, margin, width, height, i, n)
+    |> Enum.flat_map(fn {entry, i} ->
+      legend_row(entry, legend, margin, width, height, i, n)
     end)
   end
 
@@ -319,61 +354,116 @@ defmodule Plotto.SVG.Renderer.Shared do
   # Plotto.Data.validate/1 requires non-nil names whenever there are 2+ series) and
   # returns [] outright for an invalid/nil `legend` position.
   defp drawable_entries(legend, entries) when legend in @legend_positions do
-    Enum.filter(entries, fn {name, _color} -> not is_nil(name) end)
+    Enum.filter(entries, fn
+      {name, _color} -> not is_nil(name)
+      {name, _color, _meta} -> not is_nil(name)
+    end)
   end
 
   defp drawable_entries(_legend, _entries), do: []
 
-  # Generalizes the single-row formula from the prior legend design (n = 1, i = 0
-  # reduces to `anchor - row_height / 2`, matching it exactly): row `i` (0-based,
-  # `i = 0` topmost) of `n` total rows.
-  #
-  # Top: anchored to `margin.top` (already enlarged by effective_margin/3) — the
-  # title lives at a fixed absolute y independent of margin, so the band above the
-  # (enlarged) margin.top is genuinely empty.
-  #
-  # Bottom: anchored to the absolute `height`, NOT `margin.bottom` — the x-axis tick
-  # labels are positioned relative to margin.bottom (see `x_label/2` above), so they
-  # shift down as margin.bottom grows; the actual empty space is the last
-  # `row_height * n` pixels of the canvas. Anchoring to margin.bottom instead would
-  # place the legend on the tick labels' baseline (a real bug caught in the prior
-  # single-entry legend design).
-  #
-  # `y_center(i) = anchor - row_height * (n - i - 0.5)` is strictly increasing in
-  # `i` regardless of anchor, so row 0 is topmost-within-the-band for both :top_*
-  # and :bottom_* positions — no special-casing needed per anchor.
-  defp legend_row(name, color, legend, margin, width, height, i, n) do
+  defp legend_row(entry, legend, margin, width, height, i, n) do
+    {name, color, meta} =
+      case entry do
+        {name, color} -> {name, color, %{type: :rect}}
+        {name, color, meta} -> {name, color, meta}
+      end
+
     swatch_size = Theme.legend_swatch_size()
+
+    swatch_width =
+      Map.get(meta, :swatch_width) || if(meta[:type] == :line, do: 18, else: swatch_size)
+
     gap = Theme.legend_gap()
     row_height = Theme.legend_row_height()
     font_size = Theme.font_size()
 
-    anchor =
+    {y_center, swatch_x, text_x, text_anchor} =
       case legend do
-        position when position in [:top_left, :top_right] -> margin.top
-        position when position in [:bottom_left, :bottom_right] -> height
-      end
+        position when position in [:top_left, :top_right] ->
+          anchor = margin.top
+          y = anchor - row_height * (n - i - 0.5)
 
-    y_center = anchor - row_height * (n - i - 0.5)
+          case position do
+            :top_left ->
+              {y, margin.left, margin.left + swatch_width + gap, "start"}
 
-    {swatch_x, text_x, text_anchor} =
-      case legend do
-        position when position in [:top_left, :bottom_left] ->
-          {margin.left, margin.left + swatch_size + gap, "start"}
+            :top_right ->
+              {y, width - margin.right - swatch_width, width - margin.right - swatch_width - gap,
+               "end"}
+          end
 
-        position when position in [:top_right, :bottom_right] ->
-          {width - margin.right - swatch_size, width - margin.right - swatch_size - gap, "end"}
+        position when position in [:bottom_left, :bottom_right] ->
+          anchor = height
+          y = anchor - row_height * (n - i - 0.5)
+
+          case position do
+            :bottom_left ->
+              {y, margin.left, margin.left + swatch_width + gap, "start"}
+
+            :bottom_right ->
+              {y, width - margin.right - swatch_width, width - margin.right - swatch_width - gap,
+               "end"}
+          end
+
+        position when position in [:right_top, :right_bottom] ->
+          y =
+            case position do
+              :right_top ->
+                margin.top + (i + 0.5) * row_height
+
+              :right_bottom ->
+                height - margin.bottom - (n - i - 0.5) * row_height
+            end
+
+          sx = width - margin.right + 12
+          tx = sx + swatch_width + gap
+          {y, sx, tx, "start"}
+
+        position when position in [:left_top, :left_bottom] ->
+          y =
+            case position do
+              :left_top ->
+                margin.top + (i + 0.5) * row_height
+
+              :left_bottom ->
+                height - margin.bottom - (n - i - 0.5) * row_height
+            end
+
+          sx = 8
+          tx = sx + swatch_width + gap
+          {y, sx, tx, "start"}
       end
 
     swatch =
-      Element.new("rect", %{
-        "x" => swatch_x,
-        "y" => y_center - swatch_size / 2,
-        "width" => swatch_size,
-        "height" => swatch_size,
-        "fill" => color,
-        "class" => "plotto-legend-swatch"
-      })
+      case meta[:type] do
+        :line ->
+          line_stroke_width = Map.get(meta, :stroke_width, 2)
+
+          line_attrs =
+            %{
+              "x1" => swatch_x,
+              "y1" => y_center,
+              "x2" => swatch_x + swatch_width,
+              "y2" => y_center,
+              "stroke" => color,
+              "stroke-width" => to_string(line_stroke_width),
+              "class" => "plotto-legend-swatch"
+            }
+            |> maybe_put("stroke-dasharray", meta[:stroke_dasharray])
+
+          Element.new("line", line_attrs)
+
+        _rect ->
+          Element.new("rect", %{
+            "x" => swatch_x,
+            "y" => y_center - swatch_size / 2,
+            "width" => swatch_size,
+            "height" => swatch_size,
+            "fill" => color,
+            "class" => "plotto-legend-swatch"
+          })
+      end
 
     text =
       Element.new(
@@ -391,4 +481,7 @@ defmodule Plotto.SVG.Renderer.Shared do
 
     [swatch, text]
   end
+
+  defp maybe_put(map, _key, nil), do: map
+  defp maybe_put(map, key, val), do: Map.put(map, key, val)
 end

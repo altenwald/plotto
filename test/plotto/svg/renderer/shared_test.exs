@@ -200,6 +200,41 @@ defmodule Plotto.SVG.Renderer.SharedTest do
       assert min_swatch_y > max_tick_label_y
     end
 
+    test ":right_top expands margin.right and places swatches to the right of plot area" do
+      entries = [{"Sales", "#4E79A7"}, {"Costs", "#F28E2B"}]
+      margin = Shared.effective_margin(@margin, :right_top, entries)
+
+      assert margin.right > @margin.right
+      assert margin.top == @margin.top
+
+      elements = Shared.legend_elements(entries, :right_top, margin, 600, 400)
+      [swatch0, text0, swatch1, _text1] = elements
+
+      swatch0_x = elem(Float.parse(swatch0.attrs["x"]), 0)
+      plot_right = 600 - margin.right
+      assert swatch0_x > plot_right
+      assert text0.attrs["text-anchor"] == "start"
+
+      swatch0_y = elem(Float.parse(swatch0.attrs["y"]), 0)
+      swatch1_y = elem(Float.parse(swatch1.attrs["y"]), 0)
+      assert swatch0_y < swatch1_y
+    end
+
+    test ":left_top expands margin.left and places swatches to the far left" do
+      entries = [{"Sales", "#4E79A7"}, {"Costs", "#F28E2B"}]
+      margin = Shared.effective_margin(@margin, :left_top, entries)
+
+      assert margin.left > @margin.left
+      assert margin.top == @margin.top
+
+      elements = Shared.legend_elements(entries, :left_top, margin, 600, 400)
+      [swatch0, text0, _swatch1, _text1] = elements
+
+      swatch0_x = elem(Float.parse(swatch0.attrs["x"]), 0)
+      assert swatch0_x == 8
+      assert text0.attrs["text-anchor"] == "start"
+    end
+
     test "expands left margin dynamically when Y-axis ticks are large numbers" do
       ticks = [0, 500_000, 1_000_000, 1_500_000]
       margin = Shared.effective_margin(@margin, nil, [], ticks, ["A", "B"])

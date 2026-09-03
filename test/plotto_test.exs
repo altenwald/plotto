@@ -261,5 +261,28 @@ defmodule PlottoTest do
       assert {:ok, line_png} = Plotto.to_png(line_chart)
       assert binary_part(line_png, 0, 8) == @png_signature
     end
+
+    test "multi-series line chart with dashed lines and legend renders SVG and PNG end-to-end" do
+      data = [
+        %{
+          name: "Series 1",
+          dashed: true,
+          data: [%{label: "1", value: 12}, %{label: "2", value: 49}]
+        },
+        %{
+          name: "Series 2",
+          data: [%{label: "1", value: 5}, %{label: "2", value: 20}, %{label: "3", value: 40}]
+        }
+      ]
+
+      chart = LineChart.new!(data, legend: :top_right, colors: ["#9966CC", "#4A235A"])
+
+      assert {:ok, svg} = Plotto.to_svg(chart)
+      assert svg =~ "stroke-dasharray=\"6,4\""
+      assert svg =~ "Series 1"
+      assert svg =~ "Series 2"
+      assert {:ok, png} = Plotto.to_png(chart)
+      assert binary_part(png, 0, 8) == @png_signature
+    end
   end
 end

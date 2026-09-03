@@ -17,12 +17,22 @@ defmodule Plotto.Theme do
   @font_size 12
   @label_font_size 10
   @title_font_size 18
-  @legend_positions [:top_left, :top_right, :bottom_left, :bottom_right]
+  @legend_positions [
+    :top_left,
+    :left_top,
+    :top_right,
+    :right_top,
+    :bottom_left,
+    :left_bottom,
+    :bottom_right,
+    :right_bottom
+  ]
   @legend_swatch_size 10
   @legend_gap 6
   @legend_row_height 20
   @bullish_color "#26A69A"
   @bearish_color "#EF5350"
+  @stroke_width 1.5
 
   def default_colors, do: @default_colors
   def default_width, do: @default_width
@@ -34,6 +44,7 @@ defmodule Plotto.Theme do
   def label_font_size, do: @label_font_size
   def title_font_size, do: @title_font_size
   def legend_positions, do: @legend_positions
+  def stroke_width, do: @stroke_width
   def legend_swatch_size, do: @legend_swatch_size
   def legend_gap, do: @legend_gap
   def legend_row_height, do: @legend_row_height

@@ -1,13 +1,12 @@
 defmodule Plotto.LineChart do
   @moduledoc """
-  A line chart: a single line connecting one point per data item.
+  A line chart: lines connecting points per data item across ordered categories.
 
-  Use a line chart to show a trend across ordered categories — a metric over time,
-  for example. `data` uses the same multi-series shape as `Plotto.BarChart`, but
-  today only the **first** series is drawn — full multi-series line rendering
-  (multiple lines) is planned for a future release; extra series are currently
-  accepted (so both chart types share the same data validation) but ignored when
-  rendering, including in the legend.
+  Use a line chart to show a trend across ordered categories — metrics over time,
+  for example. Both single-series and multi-series charts are supported. Lines can
+  be solid or dashed (via `:dashed => true`, `:style => :dashed`, `:stroke_dasharray`,
+  or the `:line_styles` chart option), each series can have its own color, and series
+  can span subsets of the shared category axis.
 
   ## Example
 
@@ -18,16 +17,27 @@ defmodule Plotto.LineChart do
             %{label: "Jan", value: 10, attrs: %{"phx-click" => "select", "phx-value-id" => "1"}},
             %{label: "Feb", value: 25}
           ]
+        },
+        %{
+          name: "Target",
+          dashed: true,
+          data: [
+            %{label: "Jan", value: 15},
+            %{label: "Feb", value: 20}
+          ]
         }
       ]
 
-      chart = Plotto.LineChart.new!(data, title: "Trend", colors: ["#4E79A7"])
+      chart = Plotto.LineChart.new!(data, title: "Trend vs Target", legend: :top_right)
       svg = Plotto.to_svg!(chart)
       png = Plotto.to_png!(chart)
 
   """
 
   defstruct [:data, :opts]
+
+  alias Plotto.Chart.Builder
+  alias Plotto.LineData
 
   @typedoc """
   One data point: a category `:label`, its numeric `:value`, and optional `:attrs` —
@@ -43,13 +53,19 @@ defmodule Plotto.LineChart do
 
   @typedoc """
   One data series: `:name` (required when there are 2+ series — see `new/2`) and its
-  list of `t:data_item/0` points. All series in a chart must share identical,
-  identically-ordered `:label`s across their `:data`. Only the first series is
-  currently drawn — see the moduledoc.
+  list of `t:data_item/0` points. Series can also specify `:dashed` (`true`/`false`),
+  `:style` (`:solid`/`:dashed`), `:stroke_dasharray` (e.g. `"6,4"`), or `:color` (hex string).
   """
   @type series :: %{
           required(:name) => String.t() | nil,
-          required(:data) => [data_item()]
+          required(:data) => [data_item()],
+          optional(:dashed) => boolean(),
+          optional(:dotted) => boolean(),
+          optional(:style) => :solid | :dashed | :dotted,
+          optional(:stroke_dasharray) => String.t(),
+          optional(:stroke_width) => number(),
+          optional(:line_width) => number(),
+          optional(:color) => String.t()
         }
 
   @typedoc """
@@ -62,9 +78,20 @@ defmodule Plotto.LineChart do
           height: pos_integer(),
           title: String.t() | nil,
           colors: [String.t()],
-          legend: :top_left | :top_right | :bottom_left | :bottom_right | nil,
+          legend:
+            :top_left
+            | :left_top
+            | :top_right
+            | :right_top
+            | :bottom_left
+            | :left_bottom
+            | :bottom_right
+            | :right_bottom
+            | nil,
           tooltip: :data | :native | :title | false | nil | function(),
-          label: boolean() | :label | :value | :top | nil | function()
+          label: boolean() | :label | :value | :top | nil | function(),
+          line_styles: [atom() | String.t() | nil],
+          stroke_width: number()
         }
 
   @typedoc """
@@ -75,9 +102,7 @@ defmodule Plotto.LineChart do
   @doc """
   Builds a line chart. Returns `{:ok, chart}` or `{:error, reason}`.
 
-  `data` is a list of `t:series/0` maps — see the moduledoc: only the first series
-  is drawn today, but the validation rules (matching labels, `:name` required for
-  2+ series) apply the same as for `Plotto.BarChart`.
+  `data` can be either a flat list of `t:data_item/0` maps or a list of `t:series/0` maps.
 
   ## Options
 
@@ -85,12 +110,15 @@ defmodule Plotto.LineChart do
     * `:height` - chart height in pixels. Defaults to `400`.
     * `:title` - optional chart title, centered above the plot. Defaults to `nil` (no
       title).
-    * `:colors` - list of `"#RRGGBB"` hex color strings; only the first color is
-      used, as the (first/only-rendered series') line's stroke color. Defaults to
-      `["#4E79A7", "#F28E2B", "#E15759", "#76B7B2", "#59A14F"]`.
-    * `:legend` - optional legend position: `:top_left`, `:top_right`, `:bottom_left`,
-      or `:bottom_right`. Renders one row for the first series' `:name` only.
+    * `:colors` - list of `"#RRGGBB"` hex color strings assigned to each series in order.
+      Defaults to `["#4E79A7", "#F28E2B", "#E15759", "#76B7B2", "#59A14F"]`.
+    * `:legend` - optional legend position: `:top_left`, `:left_top`, `:top_right`,
+      `:right_top`, `:bottom_left`, `:left_bottom`, `:bottom_right`, or `:right_bottom`.
       Defaults to `nil` (no legend).
+    * `:line_styles` - optional list of styles (`:solid`, `:dashed`, `:dotted`, or custom dash pattern
+      strings like `"6,4"`) corresponding to each series. Defaults to `[]`.
+    * `:stroke_width` - optional stroke width in pixels for lines. Defaults to `1.5`.
+      Can also be passed as `:line_width`, or specified per series.
     * `:label` - optional point label placed immediately above each point. When `true`
       (or `:label`), displays the point's `:label`. Can also be `:value` to display the
       numeric value, or a custom 1-2 arity function `(item)` or `(item, series_name)`.
@@ -126,13 +154,13 @@ defmodule Plotto.LineChart do
       {:error, "data must not be empty"}
 
   """
-  @spec new([series()], keyword()) :: {:ok, t()} | {:error, String.t()}
-  def new(data, opts \\ []), do: Plotto.Chart.Builder.new(__MODULE__, data, opts)
+  @spec new([data_item()] | [series()], keyword()) :: {:ok, t()} | {:error, String.t()}
+  def new(data, opts \\ []), do: Builder.new(__MODULE__, data, opts, LineData)
 
   @doc """
   Same as `new/2`, but raises `ArgumentError` on invalid data instead of returning an
   error tuple. See `new/2` for the accepted `data` shape and available options.
   """
-  @spec new!([series()], keyword()) :: t()
-  def new!(data, opts \\ []), do: Plotto.Chart.Builder.new!(__MODULE__, data, opts)
+  @spec new!([data_item()] | [series()], keyword()) :: t()
+  def new!(data, opts \\ []), do: Builder.new!(__MODULE__, data, opts, LineData)
 end

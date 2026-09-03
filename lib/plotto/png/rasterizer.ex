@@ -48,8 +48,9 @@ defmodule Plotto.PNG.Rasterizer do
     y2 = num(attrs["y2"]) * @supersample
     {:ok, color} = Color.parse(attrs["stroke"])
     width = num(Map.get(attrs, "stroke-width", "1")) * @supersample
+    dash_pattern = parse_dasharray(attrs["stroke-dasharray"])
 
-    Canvas.draw_line(canvas, x1, y1, x2, y2, color, width)
+    Canvas.draw_line(canvas, x1, y1, x2, y2, color, width, dash_pattern)
   end
 
   defp draw_element(canvas, %Element{tag: "polyline", attrs: attrs}) do
@@ -63,8 +64,9 @@ defmodule Plotto.PNG.Rasterizer do
 
     {:ok, color} = Color.parse(attrs["stroke"])
     width = num(Map.get(attrs, "stroke-width", "1")) * @supersample
+    dash_pattern = parse_dasharray(attrs["stroke-dasharray"])
 
-    Canvas.draw_polyline(canvas, points, color, width)
+    Canvas.draw_polyline(canvas, points, color, width, dash_pattern)
   end
 
   defp draw_element(canvas, %Element{tag: "text", attrs: attrs, children: [text]}) do
@@ -130,4 +132,21 @@ defmodule Plotto.PNG.Rasterizer do
   end
 
   defp num(str), do: elem(Float.parse(str), 0)
+
+  defp parse_dasharray(nil), do: nil
+  defp parse_dasharray(""), do: nil
+
+  defp parse_dasharray(str) do
+    numbers =
+      str
+      |> String.split([",", " "], trim: true)
+      |> Enum.map(&(num(&1) * @supersample))
+
+    case numbers do
+      [] -> nil
+      [single] -> [single, single]
+      list when rem(length(list), 2) == 1 -> list ++ list
+      list -> list
+    end
+  end
 end

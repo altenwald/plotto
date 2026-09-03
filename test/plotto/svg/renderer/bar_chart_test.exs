@@ -156,9 +156,10 @@ defmodule Plotto.SVG.Renderer.BarChartTest do
     svg = Renderer.render(chart)
 
     texts =
-      svg.children
-      |> Enum.filter(&(&1.tag == "text"))
-      |> Enum.filter(&(&1.children in [["Sales"], ["Costs"]]))
+      Enum.filter(
+        svg.children,
+        &(&1.tag == "text" and &1.children in [["Sales"], ["Costs"]])
+      )
 
     assert length(texts) == 2
     [sales_text] = Enum.filter(texts, &(&1.children == ["Sales"]))

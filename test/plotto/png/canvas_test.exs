@@ -77,4 +77,20 @@ defmodule Plotto.PNG.CanvasTest do
 
     assert scanline == <<255, 255, 255, 255, 1, 2, 3, 255>>
   end
+
+  test "draw_line/8 with dash pattern draws dashes and leaves gaps" do
+    color = Canvas.pack(0, 0, 0, 255)
+    white = Canvas.pack(255, 255, 255, 255)
+    # 20 px wide horizontal line with dash=5, gap=5
+    canvas = Canvas.new(20, 5) |> Canvas.draw_line(0, 2, 19, 2, color, 1, [5, 5])
+
+    # In first dash [0..4]: drawn
+    assert Canvas.get_pixel(canvas, 2, 2) == color
+    # In first gap [5..9]: untouched white
+    assert Canvas.get_pixel(canvas, 7, 2) == white
+    # In second dash [10..14]: drawn
+    assert Canvas.get_pixel(canvas, 12, 2) == color
+    # In second gap [15..19]: untouched white
+    assert Canvas.get_pixel(canvas, 17, 2) == white
+  end
 end

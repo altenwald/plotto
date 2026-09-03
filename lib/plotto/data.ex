@@ -3,9 +3,8 @@ defmodule Plotto.Data do
 
   def validate(data) when is_list(data) and data != [] do
     with :ok <- validate_series(data),
-         :ok <- validate_matching_labels(data),
-         :ok <- validate_names(data) do
-      :ok
+         :ok <- validate_matching_labels(data) do
+      validate_names(data)
     end
   end
 

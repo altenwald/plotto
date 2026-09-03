@@ -6,7 +6,7 @@ defmodule Plotto.ThemeTest do
   test "default_colors/0 returns a non-empty list of hex colors" do
     colors = Theme.default_colors()
     assert is_list(colors)
-    assert length(colors) > 0
+    assert colors != []
     assert Enum.all?(colors, &String.starts_with?(&1, "#"))
   end
 
@@ -32,8 +32,17 @@ defmodule Plotto.ThemeTest do
     assert Theme.color([], 0) == List.first(Theme.default_colors())
   end
 
-  test "legend_positions/0 returns the four valid corner atoms" do
-    assert Theme.legend_positions() == [:top_left, :top_right, :bottom_left, :bottom_right]
+  test "legend_positions/0 returns the valid legend position atoms" do
+    assert Theme.legend_positions() == [
+             :top_left,
+             :left_top,
+             :top_right,
+             :right_top,
+             :bottom_left,
+             :left_bottom,
+             :bottom_right,
+             :right_bottom
+           ]
   end
 
   test "legend_swatch_size/0, legend_gap/0, and legend_row_height/0 return positive integers" do
