@@ -15,11 +15,12 @@ It is very useful when you are developing a website and need to integrate SVG ch
 
 If you need to export or generate PNG charts for email, PDF, or sending via Telegram, Slack, Mattermost, etc., `Plotto.to_png/1` renders the same chart to a PNG binary, anti-aliased and with full Unicode text support (including accented characters like á, é, ñ) via a bundled DejaVu Sans font.
 
-Charts can also show an optional title and a legend (one color swatch + name row per series), positioned in any of the four corners — see `:title` and `:legend` in `Plotto.BarChart` or `Plotto.LineChart`. Negative values and mixed positive/negative domains are fully supported with an automatic zero baseline.
+Charts can also show an optional title and a legend (one swatch + name row per series, rendering square swatches for bars/candles and line segments with solid/dashed/dotted styles for lines). The legend can be positioned in any of 8 directional positions (`:top_left`, `:left_top`, `:top_right`, `:right_top`, `:bottom_left`, `:left_bottom`, `:bottom_right`, `:right_bottom`). Negative values and mixed positive/negative domains are fully supported with an automatic zero baseline.
 
 ## Usage
 
 ```elixir
+# Bar chart
 chart =
   Plotto.BarChart.new!(
     [%{name: "Sales", data: [%{label: "Jan", value: 10}, %{label: "Feb", value: 25}]}],
@@ -28,9 +29,20 @@ chart =
 
 svg = Plotto.to_svg!(chart)
 png = Plotto.to_png!(chart)
+
+# Multi-line chart with dashed/dotted lines and lateral legend
+line_chart =
+  Plotto.LineChart.new!(
+    [
+      %{name: "Series A", data: [%{label: "Jan", value: 10}, %{label: "Feb", value: 30}]},
+      %{name: "Series B", dashed: true, data: [%{label: "Jan", value: 5}, %{label: "Feb", value: 45}]}
+    ],
+    legend: :right_top,
+    stroke_width: 2
+  )
 ```
 
-`Plotto.LineChart` works the same way. See `Plotto.BarChart` and `Plotto.LineChart` for the full data/options shape.
+`Plotto.LineChart` supports both flat data lists (`[%{label: "Jan", value: 10}, ...]`) for single series and multi-series lists. See `Plotto.BarChart` and `Plotto.LineChart` for the full data/options shape.
 
 ## Examples
 
