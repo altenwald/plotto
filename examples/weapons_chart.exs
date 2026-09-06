@@ -46,7 +46,11 @@ data = [
 chart =
   Plotto.LineChart.new!(
     data,
-    legend: :right_top,
+    legend: :bottom_center,
+    legend_orientation: :horizontal,
+    y_max: 100,
+    suffix: "%",
+    y_guidelines: true,
     stroke_width: 3,
     width: 700,
     height: 450

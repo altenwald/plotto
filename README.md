@@ -185,6 +185,124 @@ File.write!(Path.join(__DIR__, "candlestick_chart.png"), png)
 
 ![Candlestick chart example](examples/candlestick_chart.png)
 
+[examples/server_metrics_chart.exs](examples/server_metrics_chart.exs) generates a multi-series line chart with horizontal and vertical guidelines, percentage suffix, target threshold line, and a bottom horizontal legend (`mix run examples/server_metrics_chart.exs`):
+
+```elixir
+data = [
+  %{
+    name: "CPU Utilization",
+    color: "#E74C3C",
+    data: [
+      %{label: "00:00", value: 24},
+      %{label: "04:00", value: 18},
+      %{label: "08:00", value: 55},
+      %{label: "12:00", value: 88},
+      %{label: "16:00", value: 76},
+      %{label: "20:00", value: 42}
+    ]
+  },
+  %{
+    name: "Memory Usage",
+    color: "#3498DB",
+    dashed: true,
+    data: [
+      %{label: "00:00", value: 60},
+      %{label: "04:00", value: 62},
+      %{label: "08:00", value: 68},
+      %{label: "12:00", value: 85},
+      %{label: "16:00", value: 82},
+      %{label: "20:00", value: 70}
+    ]
+  },
+  %{
+    name: "Disk I/O",
+    color: "#2ECC71",
+    dotted: true,
+    data: [
+      %{label: "00:00", value: 10},
+      %{label: "04:00", value: 15},
+      %{label: "08:00", value: 35},
+      %{label: "12:00", value: 65},
+      %{label: "16:00", value: 40},
+      %{label: "20:00", value: 20}
+    ]
+  }
+]
+
+chart =
+  Plotto.LineChart.new!(
+    data,
+    title: "Server Performance (24h)",
+    suffix: "%",
+    y_max: 100,
+    y_max_guide: {:dashed, "#C0392B"},
+    y_guidelines: true,
+    x_guidelines: true,
+    legend: :bottom_center,
+    legend_orientation: :horizontal,
+    stroke_width: 3,
+    width: 700,
+    height: 450
+  )
+
+svg = Plotto.to_svg!(chart)
+png = Plotto.to_png!(chart)
+
+File.write!(Path.join(__DIR__, "server_metrics_chart.svg"), svg)
+File.write!(Path.join(__DIR__, "server_metrics_chart.png"), png)
+```
+
+![Server metrics chart example](examples/server_metrics_chart.png)
+
+[examples/sales_targets_chart.exs](examples/sales_targets_chart.exs) generates a grouped bar chart with currency prefix, magnitude suffix, target budget guideline, value labels, and a top horizontal legend (`mix run examples/sales_targets_chart.exs`):
+
+```elixir
+data = [
+  %{
+    name: "Actual Revenue",
+    data: [
+      %{label: "Q1", value: 65},
+      %{label: "Q2", value: 82},
+      %{label: "Q3", value: 95},
+      %{label: "Q4", value: 110}
+    ]
+  },
+  %{
+    name: "Target Budget",
+    data: [
+      %{label: "Q1", value: 70},
+      %{label: "Q2", value: 85},
+      %{label: "Q3", value: 90},
+      %{label: "Q4", value: 100}
+    ]
+  }
+]
+
+chart =
+  Plotto.BarChart.new!(
+    data,
+    title: "Quarterly Revenue vs Target ($k)",
+    prefix: "$",
+    suffix: "k",
+    y_max: 120,
+    y_max_guide: {:dashed, "#27AE60"},
+    y_guidelines: true,
+    label: :value,
+    legend: :top_center,
+    legend_orientation: :horizontal,
+    width: 700,
+    height: 450
+  )
+
+svg = Plotto.to_svg!(chart)
+png = Plotto.to_png!(chart)
+
+File.write!(Path.join(__DIR__, "sales_targets_chart.svg"), svg)
+File.write!(Path.join(__DIR__, "sales_targets_chart.png"), png)
+```
+
+![Sales targets chart example](examples/sales_targets_chart.png)
+
 ## Tooltips, Labels and CSS Styling
 
 Plotto charts generate clean SVG elements with standard semantic CSS classes (`plotto-chart`, `plotto-bar`, `plotto-candle`, `plotto-candle-bullish`, `plotto-candle-bearish`, `plotto-point`, `plotto-line`, `plotto-axis`, `plotto-label`, `plotto-label-bar`, `plotto-label-point`, `plotto-legend`), making it easy to style them with Tailwind, CSS variables, or dark mode themes.
@@ -246,7 +364,7 @@ The package can be installed by adding `plotto` to your list of dependencies in 
 ```elixir
 def deps do
   [
-    {:plotto, "~> 0.4.0"}
+    {:plotto, "~> 0.6.0"}
   ]
 end
 ```
