@@ -31,7 +31,9 @@ defmodule Plotto.Options do
       y_max_guide: normalize_guide(Keyword.get(opts, :y_max_guide, false)),
       y_min_guide: normalize_guide(Keyword.get(opts, :y_min_guide, false)),
       value_prefix: Keyword.get(opts, :value_prefix, Keyword.get(opts, :prefix)),
-      value_suffix: Keyword.get(opts, :value_suffix, Keyword.get(opts, :suffix))
+      value_suffix: Keyword.get(opts, :value_suffix, Keyword.get(opts, :suffix)),
+      x_guidelines: normalize_guidelines(Keyword.get(opts, :x_guidelines, false)),
+      y_guidelines: normalize_guidelines(Keyword.get(opts, :y_guidelines, false))
     }
   end
 
@@ -50,6 +52,8 @@ defmodule Plotto.Options do
          :ok <- validate_boolean(:y_min_soft, Keyword.get(opts, :y_min_soft, false)),
          :ok <- validate_guide(:y_max_guide, Keyword.get(opts, :y_max_guide, false)),
          :ok <- validate_guide(:y_min_guide, Keyword.get(opts, :y_min_guide, false)),
+         :ok <- validate_guide(:x_guidelines, Keyword.get(opts, :x_guidelines, false)),
+         :ok <- validate_guide(:y_guidelines, Keyword.get(opts, :y_guidelines, false)),
          :ok <-
            validate_string_or_nil(
              :value_prefix,
@@ -179,6 +183,17 @@ defmodule Plotto.Options do
 
   defp normalize_guide(color) when is_binary(color), do: {:dashed, color}
   defp normalize_guide(other), do: other
+
+  defp normalize_guidelines(false), do: false
+  defp normalize_guidelines(nil), do: false
+  defp normalize_guidelines(true), do: {:dotted, Theme.grid_color()}
+
+  defp normalize_guidelines({style, color})
+       when is_binary(color) and style in @valid_guide_styles,
+       do: {style, color}
+
+  defp normalize_guidelines(color) when is_binary(color), do: {:dotted, color}
+  defp normalize_guidelines(other), do: other
 
   defp validate_guide(_name, false), do: :ok
   defp validate_guide(_name, nil), do: :ok

@@ -187,7 +187,26 @@ defmodule Plotto.SVG.Renderer.Shared do
         &y_label(&1, margin, plot_height, min_value, max_value, opts)
       )
 
-    [y_axis_line, x_axis_line] ++ x_labels ++ y_labels
+    y_guidelines =
+      build_y_guidelines(
+        ticks,
+        margin,
+        plot_width,
+        plot_height,
+        min_value,
+        max_value,
+        opts
+      )
+
+    x_guidelines =
+      build_x_guidelines(
+        bands,
+        margin,
+        plot_height,
+        opts
+      )
+
+    y_guidelines ++ x_guidelines ++ [y_axis_line, x_axis_line] ++ x_labels ++ y_labels
   end
 
   def rotate_x_labels?(labels) do
@@ -367,6 +386,83 @@ defmodule Plotto.SVG.Renderer.Shared do
       nil
     end
   end
+
+  defp build_y_guidelines(ticks, margin, plot_width, plot_height, min_value, max_value, opts) do
+    case Map.get(opts, :y_guidelines) do
+      nil ->
+        []
+
+      false ->
+        []
+
+      guide_opt ->
+        {style, color} = parse_guideline_style(guide_opt)
+        dash_array = guideline_dash_array(style)
+
+        ticks
+        |> Enum.reject(fn tick ->
+          tick == 0 and min_value <= 0 and max_value >= 0
+        end)
+        |> Enum.map(fn tick ->
+          y = margin.top + Axis.linear_scale(tick, min_value, max_value, plot_height)
+
+          attrs =
+            %{
+              "x1" => to_string(margin.left),
+              "y1" => to_string(y),
+              "x2" => to_string(margin.left + plot_width),
+              "y2" => to_string(y),
+              "stroke" => color,
+              "stroke-width" => "1",
+              "class" => "plotto-guideline plotto-guideline-y"
+            }
+            |> maybe_put("stroke-dasharray", dash_array)
+
+          Element.new("line", attrs)
+        end)
+    end
+  end
+
+  defp build_x_guidelines(bands, margin, plot_height, opts) do
+    case Map.get(opts, :x_guidelines) do
+      nil ->
+        []
+
+      false ->
+        []
+
+      guide_opt ->
+        {style, color} = parse_guideline_style(guide_opt)
+        dash_array = guideline_dash_array(style)
+
+        Enum.map(bands, fn band ->
+          x = margin.left + band.x
+
+          attrs =
+            %{
+              "x1" => to_string(x),
+              "y1" => to_string(margin.top),
+              "x2" => to_string(x),
+              "y2" => to_string(margin.top + plot_height),
+              "stroke" => color,
+              "stroke-width" => "1",
+              "class" => "plotto-guideline plotto-guideline-x"
+            }
+            |> maybe_put("stroke-dasharray", dash_array)
+
+          Element.new("line", attrs)
+        end)
+    end
+  end
+
+  defp parse_guideline_style(true), do: {:dotted, Theme.grid_color()}
+  defp parse_guideline_style({style, color}) when is_binary(color), do: {style, color}
+  defp parse_guideline_style(color) when is_binary(color), do: {:dotted, color}
+
+  defp guideline_dash_array(:solid), do: nil
+  defp guideline_dash_array(:dotted), do: "2,4"
+  defp guideline_dash_array(:dashed), do: "6,4"
+  defp guideline_dash_array(custom) when is_binary(custom), do: custom
 
   def effective_margin(margin, legend, entries) do
     effective_margin(margin, legend, entries, [], [], :vertical, %{})

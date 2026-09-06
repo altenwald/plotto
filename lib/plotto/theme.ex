@@ -13,6 +13,7 @@ defmodule Plotto.Theme do
   @default_height 400
   @margin %{top: 40, right: 24, bottom: 48, left: 56}
   @axis_color "#CCCCCC"
+  @grid_color "#E0E0E0"
   @text_color "#333333"
   @font_size 12
   @label_font_size 10
@@ -45,6 +46,7 @@ defmodule Plotto.Theme do
   def default_height, do: @default_height
   def margin, do: @margin
   def axis_color, do: @axis_color
+  def grid_color, do: @grid_color
   def text_color, do: @text_color
   def font_size, do: @font_size
   def label_font_size, do: @label_font_size

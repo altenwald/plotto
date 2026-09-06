@@ -486,4 +486,78 @@ defmodule Plotto.SVG.Renderer.LineChartTest do
       assert titles == ["Jan: -$10", "Feb: $20"]
     end
   end
+
+  describe "x_guidelines and y_guidelines" do
+    test "y_guidelines: true renders dotted horizontal guidelines for non-zero ticks" do
+      chart = LineChart.new!(@single_series, y_guidelines: true)
+      svg = Renderer.render(chart)
+
+      guidelines =
+        Enum.filter(
+          svg.children,
+          &(&1.tag == "line" and
+              &1.attrs["class"] == "plotto-guideline plotto-guideline-y")
+        )
+
+      assert guidelines != []
+
+      for g <- guidelines do
+        assert g.attrs["stroke"] == Plotto.Theme.grid_color()
+        assert g.attrs["stroke-dasharray"] == "2,4"
+        assert g.attrs["stroke-width"] == "1"
+      end
+    end
+
+    test "x_guidelines: true renders vertical guidelines for each category" do
+      chart = LineChart.new!(@single_series, x_guidelines: true)
+      svg = Renderer.render(chart)
+
+      guidelines =
+        Enum.filter(
+          svg.children,
+          &(&1.tag == "line" and
+              &1.attrs["class"] == "plotto-guideline plotto-guideline-x")
+        )
+
+      # 2 categories: Jan, Feb
+      assert length(guidelines) == 2
+
+      for g <- guidelines do
+        assert g.attrs["stroke"] == Plotto.Theme.grid_color()
+        assert g.attrs["stroke-dasharray"] == "2,4"
+      end
+    end
+
+    test "y_guidelines and x_guidelines with custom styles" do
+      chart =
+        LineChart.new!(@single_series,
+          y_guidelines: {:dashed, "#FF0000"},
+          x_guidelines: {:solid, "#00FF00"}
+        )
+
+      svg = Renderer.render(chart)
+
+      y_guides =
+        Enum.filter(
+          svg.children,
+          &(&1.tag == "line" and
+              &1.attrs["class"] == "plotto-guideline plotto-guideline-y")
+        )
+
+      x_guides =
+        Enum.filter(
+          svg.children,
+          &(&1.tag == "line" and
+              &1.attrs["class"] == "plotto-guideline plotto-guideline-x")
+        )
+
+      assert y_guides != []
+      assert hd(y_guides).attrs["stroke"] == "#FF0000"
+      assert hd(y_guides).attrs["stroke-dasharray"] == "6,4"
+
+      assert length(x_guides) == 2
+      assert hd(x_guides).attrs["stroke"] == "#00FF00"
+      refute Map.has_key?(hd(x_guides).attrs, "stroke-dasharray")
+    end
+  end
 end

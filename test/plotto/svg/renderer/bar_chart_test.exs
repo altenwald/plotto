@@ -563,4 +563,39 @@ defmodule Plotto.SVG.Renderer.BarChartTest do
       assert bar_labels == ["10%", "25%"]
     end
   end
+
+  describe "x_guidelines and y_guidelines" do
+    test "y_guidelines: true renders horizontal guidelines in bar chart" do
+      chart = BarChart.new!(@single_series, y_guidelines: true)
+      svg = Renderer.render(chart)
+
+      guidelines =
+        Enum.filter(
+          svg.children,
+          &(&1.tag == "line" and
+              &1.attrs["class"] == "plotto-guideline plotto-guideline-y")
+        )
+
+      assert guidelines != []
+
+      for g <- guidelines do
+        assert g.attrs["stroke"] == Plotto.Theme.grid_color()
+        assert g.attrs["stroke-dasharray"] == "2,4"
+      end
+    end
+
+    test "x_guidelines: true renders vertical guidelines in bar chart" do
+      chart = BarChart.new!(@single_series, x_guidelines: true)
+      svg = Renderer.render(chart)
+
+      guidelines =
+        Enum.filter(
+          svg.children,
+          &(&1.tag == "line" and
+              &1.attrs["class"] == "plotto-guideline plotto-guideline-x")
+        )
+
+      assert length(guidelines) == 2
+    end
+  end
 end

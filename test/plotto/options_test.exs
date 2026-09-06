@@ -282,4 +282,45 @@ defmodule Plotto.OptionsTest do
                {:error, "invalid value_suffix option, expected a string or nil, got: [\"%\"]"}
     end
   end
+
+  describe "x_guidelines and y_guidelines options" do
+    test "fills in x_guidelines and y_guidelines as false by default" do
+      opts = Options.build([])
+      assert opts.x_guidelines == false
+      assert opts.y_guidelines == false
+    end
+
+    test "normalizes x_guidelines and y_guidelines" do
+      opts = Options.build(x_guidelines: true, y_guidelines: "#123456")
+      assert opts.x_guidelines == {:dotted, Plotto.Theme.grid_color()}
+      assert opts.y_guidelines == {:dotted, "#123456"}
+
+      custom = Options.build(x_guidelines: {:solid, "#000"}, y_guidelines: {:dashed, "#FFF"})
+      assert custom.x_guidelines == {:solid, "#000"}
+      assert custom.y_guidelines == {:dashed, "#FFF"}
+
+      falsy = Options.build(x_guidelines: false, y_guidelines: nil)
+      assert falsy.x_guidelines == false
+      assert falsy.y_guidelines == false
+    end
+
+    test "validate/1 returns :ok for valid x_guidelines and y_guidelines" do
+      assert Options.validate(x_guidelines: false) == :ok
+      assert Options.validate(x_guidelines: true) == :ok
+      assert Options.validate(x_guidelines: "#E0E0E0") == :ok
+      assert Options.validate(x_guidelines: {:dashed, "#333"}) == :ok
+      assert Options.validate(y_guidelines: {:dotted, "gray"}) == :ok
+      assert Options.validate(y_guidelines: {:solid, "#000"}) == :ok
+    end
+
+    test "validate/1 returns {:error, reason} for invalid guidelines" do
+      assert Options.validate(x_guidelines: :invalid) ==
+               {:error,
+                "invalid x_guidelines option, expected false, true, a color string, or {:solid | :dashed | :dotted, color}, got: :invalid"}
+
+      assert Options.validate(y_guidelines: {:zigzag, "#000"}) ==
+               {:error,
+                "invalid y_guidelines option, expected false, true, a color string, or {:solid | :dashed | :dotted, color}, got: {:zigzag, \"#000\"}"}
+    end
+  end
 end

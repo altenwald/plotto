@@ -233,6 +233,12 @@ Charts support adding prefixes and suffixes to numeric values across Y-axis tick
 - `:value_suffix` (or `:suffix`): string appended to numeric values (e.g. `suffix: "%"` or `suffix: " USD"`). Negative numbers are formatted properly (e.g. `"-25%"`). Defaults to `nil`.
 - `:value_prefix` (or `:prefix`): string prepended to numeric values (e.g. `prefix: "$"` or `prefix: "€"`). Negative numbers format with the minus sign preceding the prefix (e.g. `"-$25"`). Defaults to `nil`.
 
+### Grid Lines and Guidelines
+
+Charts support drawing horizontal and vertical guidelines (grid lines) behind data points and series:
+- `:y_guidelines`: horizontal guidelines drawn across the plot at each Y-axis tick mark. Can be `false` (default), `true` (dotted with theme grid color), a color string (`"#E0E0E0"`), or a tuple `{:dotted | :dashed | :solid, color}` (e.g. `{:dashed, "#CCCCCC"}`).
+- `:x_guidelines`: vertical guidelines drawn across the plot at each category along the X axis. Follows the same format as `:y_guidelines`. Defaults to `false`.
+
 ## Installation
 
 The package can be installed by adding `plotto` to your list of dependencies in `mix.exs`:

@@ -87,7 +87,9 @@ defmodule Plotto.BarChart do
           y_max_guide: false | {:solid | :dashed | :dotted, String.t()},
           y_min_guide: false | {:solid | :dashed | :dotted, String.t()},
           value_prefix: String.t() | nil,
-          value_suffix: String.t() | nil
+          value_suffix: String.t() | nil,
+          x_guidelines: false | {:solid | :dashed | :dotted, String.t()},
+          y_guidelines: false | {:solid | :dashed | :dotted, String.t()}
         }
 
   @typedoc """
@@ -139,6 +141,10 @@ defmodule Plotto.BarChart do
       Can also be passed as `:prefix`. Defaults to `nil`.
     * `:value_suffix` - optional string suffix appended to numeric values (e.g. `"%"`).
       Can also be passed as `:suffix`. Defaults to `nil`.
+    * `:x_guidelines` - optional vertical guidelines drawn at each category: `false`, `true`,
+      or `{:solid | :dashed | :dotted, color}`. Defaults to `false`.
+    * `:y_guidelines` - optional horizontal guidelines drawn at each Y-axis tick: `false`, `true`,
+      or `{:solid | :dashed | :dotted, color}`. Defaults to `false`.
 
   ## Examples
 
