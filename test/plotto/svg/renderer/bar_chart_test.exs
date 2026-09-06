@@ -480,4 +480,53 @@ defmodule Plotto.SVG.Renderer.BarChartTest do
       assert Enum.map(labels, & &1.children) == [["Jan"], ["Feb"]]
     end
   end
+
+  describe "y_max, y_min, and guide lines" do
+    test "y_max extends the Y axis and renders guide line" do
+      chart =
+        BarChart.new!(@single_series,
+          y_max: 100,
+          y_max_guide: {:solid, "#FF0000"}
+        )
+
+      svg = Renderer.render(chart)
+
+      [guide] =
+        Enum.filter(
+          svg.children,
+          &(&1.tag == "line" and
+              &1.attrs["class"] == "plotto-guide-line plotto-guide-line-max")
+        )
+
+      assert guide.attrs["stroke"] == "#FF0000"
+      refute Map.has_key?(guide.attrs, "stroke-dasharray")
+
+      y_labels =
+        svg.children
+        |> Enum.filter(&(&1.tag == "text" and &1.attrs["class"] == "plotto-label plotto-label-y"))
+        |> Enum.map(&hd(&1.children))
+
+      assert "100" in y_labels
+    end
+
+    test "y_min_guide renders min guide line with dashed style" do
+      chart =
+        BarChart.new!(@single_series,
+          y_min: 0,
+          y_min_guide: {:dashed, "#00FF00"}
+        )
+
+      svg = Renderer.render(chart)
+
+      [guide] =
+        Enum.filter(
+          svg.children,
+          &(&1.tag == "line" and
+              &1.attrs["class"] == "plotto-guide-line plotto-guide-line-min")
+        )
+
+      assert guide.attrs["stroke"] == "#00FF00"
+      assert guide.attrs["stroke-dasharray"] == "6,4"
+    end
+  end
 end

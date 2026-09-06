@@ -205,6 +205,28 @@ All charts support the `:tooltip` option:
 - `fn item -> ... end` or `fn item, series_name -> ... end`: Custom callback returning the string to display (e.g. `fn item -> "#{item.value}%" end`). Returning `nil` or `false` skips the label for that item.
 - `false` (default): No labels rendered above elements.
 
+### Legend Positions and Orientation
+
+Plotto supports flexible legend positioning via `:legend`:
+- Top: `:top_left`, `:top_center`, `:top_right`, or `:top` (alias for `:top_center`).
+- Bottom: `:bottom_left`, `:bottom_center`, `:bottom_right`, or `:bottom` (alias for `:bottom_center`).
+- Left: `:left_top`, `:left_middle`, `:left_bottom`.
+- Right: `:right_top`, `:right_middle`, `:right_bottom`.
+
+When positioned at the top or bottom, the layout can be configured using `:legend_orientation`:
+- `:vertical` (default): stacked items vertically in a column.
+- `:horizontal`: items displayed side by side horizontally in a row.
+
+### Y-Axis Bounds and Guide Lines
+
+Charts allow specifying minimum and maximum target bounds for the Y axis:
+- `:y_max`: target maximum value for the Y axis.
+- `:y_min`: target minimum value for the Y axis.
+- `:y_max_soft`: boolean (default `true`). When `true`, if data points exceed `:y_max`, the Y axis dynamically expands to fit the data. When `false`, the axis is strictly capped at `:y_max`.
+- `:y_min_soft`: boolean (default `false`). When `true`, if data points fall below `:y_min`, the Y axis dynamically expands downwards. When `false`, the axis is strictly bounded at `:y_min`.
+- `:y_max_guide`: reference guideline drawn horizontally across the plot at `:y_max`. Can be `false` (default), `true` (dashed with theme axis color), a color string (`"#FF0000"`), or a tuple `{:solid | :dashed | :dotted, color}` (e.g. `{:dashed, "#FF0000"}`).
+- `:y_min_guide`: reference guideline drawn horizontally across the plot at `:y_min`. Follows the same format as `:y_max_guide`.
+
 ## Installation
 
 The package can be installed by adding `plotto` to your list of dependencies in `mix.exs`:

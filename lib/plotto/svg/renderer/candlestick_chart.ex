@@ -19,8 +19,9 @@ defmodule Plotto.SVG.Renderer.CandlestickChart do
     labels = Enum.map(items, & &1.label)
     all_lows = Enum.map(items, & &1.low)
     all_highs = Enum.map(items, & &1.high)
-    raw_min = Enum.min(all_lows)
-    raw_max = Enum.max(all_highs)
+    data_min = Enum.min(all_lows)
+    data_max = Enum.max(all_highs)
+    {raw_min, raw_max} = Axis.calculate_y_domain(data_min, data_max, opts)
     ticks = Axis.ticks(raw_min, raw_max)
     min_value = List.first(ticks)
     max_value = List.last(ticks)
@@ -55,6 +56,16 @@ defmodule Plotto.SVG.Renderer.CandlestickChart do
         opts.legend_orientation
       )
 
+    guides =
+      Shared.guide_elements(
+        opts,
+        margin,
+        plot_width,
+        plot_height,
+        min_value,
+        max_value
+      )
+
     children =
       Shared.axis_elements(
         bands,
@@ -66,7 +77,10 @@ defmodule Plotto.SVG.Renderer.CandlestickChart do
         ticks,
         labels
       ) ++
-        candle_elements ++ Shared.title_elements(opts.title, opts.width) ++ legend
+        guides ++
+        candle_elements ++
+        Shared.title_elements(opts.title, opts.width) ++
+        legend
 
     Shared.svg_root(opts.width, opts.height, children)
   end

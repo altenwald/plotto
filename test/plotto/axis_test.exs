@@ -70,4 +70,39 @@ defmodule Plotto.AxisTest do
       assert Axis.ticks(-10, -10, 5) == [-10]
     end
   end
+
+  describe "calculate_y_domain/3" do
+    test "defaults to baseline 0 for non-negative data" do
+      assert Axis.calculate_y_domain(10, 50, %{}) == {0, 50}
+    end
+
+    test "defaults to data_min when data contains negative values" do
+      assert Axis.calculate_y_domain(-20, 50, %{}) == {-20, 50}
+    end
+
+    test "y_max with y_max_soft: true expands to y_max when data_max < y_max" do
+      opts = %{y_max: 100, y_max_soft: true}
+      assert Axis.calculate_y_domain(10, 63, opts) == {0, 100}
+    end
+
+    test "y_max with y_max_soft: true expands to data_max when data_max > y_max" do
+      opts = %{y_max: 100, y_max_soft: true}
+      assert Axis.calculate_y_domain(10, 125, opts) == {0, 125}
+    end
+
+    test "y_max with y_max_soft: false strictly sets upper bound" do
+      opts = %{y_max: 100, y_max_soft: false}
+      assert Axis.calculate_y_domain(10, 125, opts) == {0, 100}
+    end
+
+    test "y_min with y_min_soft: false strictly sets lower bound" do
+      opts = %{y_min: 20, y_min_soft: false}
+      assert Axis.calculate_y_domain(30, 80, opts) == {20, 80}
+    end
+
+    test "y_min with y_min_soft: true expands to data_min when data_min < y_min" do
+      opts = %{y_min: 20, y_min_soft: true}
+      assert Axis.calculate_y_domain(5, 80, opts) == {5, 80}
+    end
+  end
 end

@@ -14,7 +14,7 @@ defmodule Plotto.SVG.Renderer.BarChart do
       |> Enum.map(fn {series, index} -> {series.name, Theme.color(opts.colors, index)} end)
 
     labels = data |> List.first() |> Map.fetch!(:data) |> Enum.map(& &1.label)
-    {raw_min, raw_max} = calculate_domain(data, mode)
+    {raw_min, raw_max} = calculate_domain(data, mode, opts)
     ticks = Axis.ticks(raw_min, raw_max)
     min_value = List.first(ticks)
     max_value = List.last(ticks)
@@ -58,6 +58,16 @@ defmodule Plotto.SVG.Renderer.BarChart do
         opts.legend_orientation
       )
 
+    guides =
+      Shared.guide_elements(
+        opts,
+        margin,
+        plot_width,
+        plot_height,
+        min_value,
+        max_value
+      )
+
     children =
       Shared.axis_elements(
         bands,
@@ -69,19 +79,22 @@ defmodule Plotto.SVG.Renderer.BarChart do
         ticks,
         labels
       ) ++
-        bars ++ Shared.title_elements(opts.title, opts.width) ++ legend
+        guides ++
+        bars ++
+        Shared.title_elements(opts.title, opts.width) ++
+        legend
 
     Shared.svg_root(opts.width, opts.height, children)
   end
 
-  defp calculate_domain(data, :grouped) do
+  defp calculate_domain(data, :grouped, opts) do
     all_values = data |> Enum.flat_map(fn series -> Enum.map(series.data, & &1.value) end)
-    min_value = min(0, Enum.min(all_values))
-    max_value = max(0, Enum.max(all_values))
-    {min_value, max_value}
+    data_min = Enum.min(all_values)
+    data_max = Enum.max(all_values)
+    Axis.calculate_y_domain(data_min, data_max, opts)
   end
 
-  defp calculate_domain(data, :stacked) do
+  defp calculate_domain(data, :stacked, opts) do
     n_categories = data |> List.first() |> Map.fetch!(:data) |> length()
 
     {min_neg, max_pos} =
@@ -95,7 +108,7 @@ defmodule Plotto.SVG.Renderer.BarChart do
         {min(min_neg, neg_sum), max(max_pos, pos_sum)}
       end)
 
-    {min(0, min_neg), max(0, max_pos)}
+    Axis.calculate_y_domain(min_neg, max_pos, opts)
   end
 
   defp build_bars(

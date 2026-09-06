@@ -319,4 +319,93 @@ defmodule Plotto.SVG.Renderer.LineChartTest do
       assert p2.attrs["stroke-width"] == "4"
     end
   end
+
+  describe "y_max, y_min, and guide lines" do
+    test "y_max extends the Y axis when data is below target" do
+      chart = LineChart.new!(@single_series, y_max: 100)
+      svg = Renderer.render(chart)
+
+      y_labels =
+        svg.children
+        |> Enum.filter(&(&1.tag == "text" and &1.attrs["class"] == "plotto-label plotto-label-y"))
+        |> Enum.map(&hd(&1.children))
+
+      assert "100" in y_labels
+    end
+
+    test "y_max with y_max_soft: true expands axis when data surpasses y_max" do
+      data = [
+        %{name: "Revenue", data: [%{label: "Jan", value: 10}, %{label: "Feb", value: 120}]}
+      ]
+
+      chart = LineChart.new!(data, y_max: 100, y_max_soft: true)
+      svg = Renderer.render(chart)
+
+      y_labels =
+        svg.children
+        |> Enum.filter(&(&1.tag == "text" and &1.attrs["class"] == "plotto-label plotto-label-y"))
+        |> Enum.map(&hd(&1.children))
+
+      top_label = y_labels |> List.last() |> String.to_integer()
+      assert top_label >= 120
+    end
+
+    test "y_max_guide renders a guide line at target" do
+      chart =
+        LineChart.new!(@single_series,
+          y_max: 100,
+          y_max_guide: {:dashed, "#E00"}
+        )
+
+      svg = Renderer.render(chart)
+
+      guide_lines =
+        Enum.filter(
+          svg.children,
+          &(&1.tag == "line" and
+              &1.attrs["class"] == "plotto-guide-line plotto-guide-line-max")
+        )
+
+      assert length(guide_lines) == 1
+      [guide] = guide_lines
+      assert guide.attrs["stroke"] == "#E00"
+      assert guide.attrs["stroke-dasharray"] == "6,4"
+    end
+
+    test "y_min_guide renders a dotted guide line at minimum" do
+      chart =
+        LineChart.new!(@single_series,
+          y_min: 0,
+          y_min_guide: {:dotted, "#00E"}
+        )
+
+      svg = Renderer.render(chart)
+
+      guide_lines =
+        Enum.filter(
+          svg.children,
+          &(&1.tag == "line" and
+              &1.attrs["class"] == "plotto-guide-line plotto-guide-line-min")
+        )
+
+      assert length(guide_lines) == 1
+      [guide] = guide_lines
+      assert guide.attrs["stroke"] == "#00E"
+      assert guide.attrs["stroke-dasharray"] == "2,4"
+    end
+
+    test "guide lines are not rendered when guide option is false" do
+      chart = LineChart.new!(@single_series, y_max: 100, y_max_guide: false)
+      svg = Renderer.render(chart)
+
+      guide_lines =
+        Enum.filter(
+          svg.children,
+          &(&1.tag == "line" and
+              String.starts_with?(&1.attrs["class"] || "", "plotto-guide-line"))
+        )
+
+      assert guide_lines == []
+    end
+  end
 end

@@ -1,6 +1,40 @@
 defmodule Plotto.Axis do
   @moduledoc false
 
+  def calculate_y_domain(data_min, data_max, opts) do
+    raw_min =
+      case Map.get(opts, :y_min) do
+        nil ->
+          min(0, data_min)
+
+        y_min when is_number(y_min) ->
+          if Map.get(opts, :y_min_soft, false) do
+            min(data_min, y_min)
+          else
+            y_min
+          end
+      end
+
+    raw_max =
+      case Map.get(opts, :y_max) do
+        nil ->
+          max(0, data_max)
+
+        y_max when is_number(y_max) ->
+          if Map.get(opts, :y_max_soft, true) do
+            max(data_max, y_max)
+          else
+            y_max
+          end
+      end
+
+    if raw_min == raw_max do
+      if raw_min == 0, do: {0, 1}, else: {raw_min, raw_min + 1}
+    else
+      {raw_min, raw_max}
+    end
+  end
+
   def categorical_scale(labels, plot_width) do
     band_width = plot_width / length(labels)
 

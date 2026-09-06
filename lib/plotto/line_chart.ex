@@ -98,7 +98,13 @@ defmodule Plotto.LineChart do
           tooltip: :data | :native | :title | false | nil | function(),
           label: boolean() | :label | :value | :top | nil | function(),
           line_styles: [atom() | String.t() | nil],
-          stroke_width: number()
+          stroke_width: number(),
+          y_max: number() | nil,
+          y_min: number() | nil,
+          y_max_soft: boolean(),
+          y_min_soft: boolean(),
+          y_max_guide: false | {:solid | :dashed | :dotted, String.t()},
+          y_min_guide: false | {:solid | :dashed | :dotted, String.t()}
         }
 
   @typedoc """
@@ -132,6 +138,16 @@ defmodule Plotto.LineChart do
       (or `:label`), displays the point's `:label`. Can also be `:value` to display the
       numeric value, or a custom 1-2 arity function `(item)` or `(item, series_name)`.
       Defaults to `false` (no label above points).
+    * `:y_max` - optional maximum target or upper bound for the Y axis. Defaults to `nil`.
+    * `:y_min` - optional minimum target or lower bound for the Y axis. Defaults to `nil`.
+    * `:y_max_soft` - boolean indicating if `:y_max` can be exceeded if data values are greater.
+      Defaults to `true`.
+    * `:y_min_soft` - boolean indicating if `:y_min` can be exceeded if data values are smaller.
+      Defaults to `false`.
+    * `:y_max_guide` - optional horizontal guide line drawn at `y_max`: `false`, `true`,
+      or `{:solid | :dashed | :dotted, color}`. Defaults to `false`.
+    * `:y_min_guide` - optional horizontal guide line drawn at `y_min`: `false`, `true`,
+      or `{:solid | :dashed | :dotted, color}`. Defaults to `false`.
 
   ## Examples
 

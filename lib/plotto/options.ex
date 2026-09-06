@@ -23,7 +23,13 @@ defmodule Plotto.Options do
       line_styles:
         normalize_line_styles(Keyword.get(opts, :line_styles, Keyword.get(opts, :line_style, []))),
       stroke_width:
-        Keyword.get(opts, :stroke_width, Keyword.get(opts, :line_width, Theme.stroke_width()))
+        Keyword.get(opts, :stroke_width, Keyword.get(opts, :line_width, Theme.stroke_width())),
+      y_max: Keyword.get(opts, :y_max),
+      y_min: Keyword.get(opts, :y_min),
+      y_max_soft: Keyword.get(opts, :y_max_soft, true),
+      y_min_soft: Keyword.get(opts, :y_min_soft, false),
+      y_max_guide: normalize_guide(Keyword.get(opts, :y_max_guide, false)),
+      y_min_guide: normalize_guide(Keyword.get(opts, :y_min_guide, false))
     }
   end
 
@@ -34,8 +40,14 @@ defmodule Plotto.Options do
          :ok <- validate_tooltip(Keyword.get(opts, :tooltip)),
          :ok <- validate_label(Keyword.get(opts, :label, Keyword.get(opts, :labels))),
          :ok <-
-           validate_line_styles(Keyword.get(opts, :line_styles, Keyword.get(opts, :line_style))) do
-      validate_stroke_width(Keyword.get(opts, :stroke_width, Keyword.get(opts, :line_width)))
+           validate_line_styles(Keyword.get(opts, :line_styles, Keyword.get(opts, :line_style))),
+         :ok <-
+           validate_stroke_width(Keyword.get(opts, :stroke_width, Keyword.get(opts, :line_width))),
+         :ok <- validate_y_bounds(Keyword.get(opts, :y_min), Keyword.get(opts, :y_max)),
+         :ok <- validate_boolean(:y_max_soft, Keyword.get(opts, :y_max_soft, true)),
+         :ok <- validate_boolean(:y_min_soft, Keyword.get(opts, :y_min_soft, false)),
+         :ok <- validate_guide(:y_max_guide, Keyword.get(opts, :y_max_guide, false)) do
+      validate_guide(:y_min_guide, Keyword.get(opts, :y_min_guide, false))
     end
   end
 
@@ -117,5 +129,57 @@ defmodule Plotto.Options do
 
   defp validate_stroke_width(invalid) do
     {:error, "invalid stroke_width option, expected a positive number, got: #{inspect(invalid)}"}
+  end
+
+  defp validate_y_bounds(nil, nil), do: :ok
+  defp validate_y_bounds(y_min, nil) when is_number(y_min), do: :ok
+  defp validate_y_bounds(nil, y_max) when is_number(y_max), do: :ok
+
+  defp validate_y_bounds(y_min, y_max) when is_number(y_min) and is_number(y_max) do
+    if y_min <= y_max do
+      :ok
+    else
+      {:error, "y_min (#{y_min}) must be less than or equal to y_max (#{y_max})"}
+    end
+  end
+
+  defp validate_y_bounds(y_min, _y_max) when not is_nil(y_min) and not is_number(y_min) do
+    {:error, "invalid y_min option, expected a number, got: #{inspect(y_min)}"}
+  end
+
+  defp validate_y_bounds(_y_min, y_max) when not is_nil(y_max) and not is_number(y_max) do
+    {:error, "invalid y_max option, expected a number, got: #{inspect(y_max)}"}
+  end
+
+  defp validate_boolean(_name, val) when is_boolean(val), do: :ok
+
+  defp validate_boolean(name, invalid) do
+    {:error, "invalid #{name} option, expected a boolean, got: #{inspect(invalid)}"}
+  end
+
+  @valid_guide_styles [:solid, :dashed, :dotted]
+
+  defp normalize_guide(false), do: false
+  defp normalize_guide(nil), do: false
+  defp normalize_guide(true), do: {:dashed, Theme.axis_color()}
+
+  defp normalize_guide({style, color}) when is_binary(color) and style in @valid_guide_styles,
+    do: {style, color}
+
+  defp normalize_guide(color) when is_binary(color), do: {:dashed, color}
+  defp normalize_guide(other), do: other
+
+  defp validate_guide(_name, false), do: :ok
+  defp validate_guide(_name, nil), do: :ok
+  defp validate_guide(_name, true), do: :ok
+  defp validate_guide(_name, color) when is_binary(color), do: :ok
+
+  defp validate_guide(_name, {style, color})
+       when style in @valid_guide_styles and is_binary(color),
+       do: :ok
+
+  defp validate_guide(name, invalid) do
+    {:error,
+     "invalid #{name} option, expected false, true, a color string, or {:solid | :dashed | :dotted, color}, got: #{inspect(invalid)}"}
   end
 end

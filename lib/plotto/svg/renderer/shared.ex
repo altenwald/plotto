@@ -247,6 +247,84 @@ defmodule Plotto.SVG.Renderer.Shared do
 
   def format_tick(tick), do: to_string(tick)
 
+  def guide_elements(opts, margin, plot_width, plot_height, min_value, max_value) do
+    max_guide =
+      build_guide_line(
+        opts.y_max,
+        opts.y_max_guide,
+        margin,
+        plot_width,
+        plot_height,
+        min_value,
+        max_value,
+        "plotto-guide-line plotto-guide-line-max"
+      )
+
+    min_guide =
+      build_guide_line(
+        opts.y_min,
+        opts.y_min_guide,
+        margin,
+        plot_width,
+        plot_height,
+        min_value,
+        max_value,
+        "plotto-guide-line plotto-guide-line-min"
+      )
+
+    Enum.reject([max_guide, min_guide], &is_nil/1)
+  end
+
+  defp build_guide_line(nil, _guide_opt, _margin, _w, _h, _min, _max, _class), do: nil
+  defp build_guide_line(_val, false, _margin, _w, _h, _min, _max, _class), do: nil
+  defp build_guide_line(_val, nil, _margin, _w, _h, _min, _max, _class), do: nil
+
+  defp build_guide_line(
+         val,
+         guide_opt,
+         margin,
+         plot_width,
+         plot_height,
+         min_value,
+         max_value,
+         class
+       ) do
+    if val >= min_value and val <= max_value do
+      {style, color} =
+        case guide_opt do
+          true -> {:dashed, Theme.axis_color()}
+          {s, c} when (is_atom(s) or is_binary(s)) and is_binary(c) -> {s, c}
+          c when is_binary(c) -> {:dashed, c}
+        end
+
+      y = margin.top + Axis.linear_scale(val, min_value, max_value, plot_height)
+
+      dash_array =
+        case style do
+          :solid -> nil
+          :dotted -> "2,4"
+          :dashed -> "6,4"
+          custom when is_binary(custom) -> custom
+        end
+
+      attrs =
+        %{
+          "x1" => to_string(margin.left),
+          "y1" => to_string(y),
+          "x2" => to_string(margin.left + plot_width),
+          "y2" => to_string(y),
+          "stroke" => color,
+          "stroke-width" => to_string(Theme.stroke_width()),
+          "class" => class
+        }
+        |> maybe_put("stroke-dasharray", dash_array)
+
+      Element.new("line", attrs)
+    else
+      nil
+    end
+  end
+
   def effective_margin(margin, legend, entries) do
     effective_margin(margin, legend, entries, [], [], :vertical)
   end

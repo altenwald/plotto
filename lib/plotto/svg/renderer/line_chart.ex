@@ -50,8 +50,9 @@ defmodule Plotto.SVG.Renderer.LineChart do
       data
       |> Enum.flat_map(fn series -> Enum.map(series.data, & &1.value) end)
 
-    raw_min = min(0, Enum.min(all_values))
-    raw_max = max(0, Enum.max(all_values))
+    data_min = Enum.min(all_values)
+    data_max = Enum.max(all_values)
+    {raw_min, raw_max} = Axis.calculate_y_domain(data_min, data_max, opts)
     ticks = Axis.ticks(raw_min, raw_max)
     min_value = List.first(ticks)
     max_value = List.last(ticks)
@@ -132,6 +133,16 @@ defmodule Plotto.SVG.Renderer.LineChart do
         opts.legend_orientation
       )
 
+    guides =
+      Shared.guide_elements(
+        opts,
+        margin,
+        plot_width,
+        plot_height,
+        min_value,
+        max_value
+      )
+
     children =
       Shared.axis_elements(
         bands,
@@ -143,6 +154,7 @@ defmodule Plotto.SVG.Renderer.LineChart do
         ticks,
         labels
       ) ++
+        guides ++
         polylines ++
         point_elements ++
         label_elements ++

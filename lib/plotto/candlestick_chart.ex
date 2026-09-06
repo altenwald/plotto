@@ -73,7 +73,13 @@ defmodule Plotto.CandlestickChart do
           legend_orientation: :vertical | :horizontal,
           bullish_color: String.t(),
           bearish_color: String.t(),
-          tooltip: :data | :native | :title | false | nil | function()
+          tooltip: :data | :native | :title | false | nil | function(),
+          y_max: number() | nil,
+          y_min: number() | nil,
+          y_max_soft: boolean(),
+          y_min_soft: boolean(),
+          y_max_guide: false | {:solid | :dashed | :dotted, String.t()},
+          y_min_guide: false | {:solid | :dashed | :dotted, String.t()}
         }
 
   @typedoc """
@@ -99,6 +105,16 @@ defmodule Plotto.CandlestickChart do
       `:bottom_left`, `:bottom_center`, or `:bottom_right`. Defaults to `nil`.
     * `:legend_orientation` - optional legend layout orientation: `:vertical` or `:horizontal`.
       Applies when `:legend` is a top or bottom position. Defaults to `:vertical`.
+    * `:y_max` - optional maximum target or upper bound for the Y axis. Defaults to `nil`.
+    * `:y_min` - optional minimum target or lower bound for the Y axis. Defaults to `nil`.
+    * `:y_max_soft` - boolean indicating if `:y_max` can be exceeded if data values are greater.
+      Defaults to `true`.
+    * `:y_min_soft` - boolean indicating if `:y_min` can be exceeded if data values are smaller.
+      Defaults to `false`.
+    * `:y_max_guide` - optional horizontal guide line drawn at `y_max`: `false`, `true`,
+      or `{:solid | :dashed | :dotted, color}`. Defaults to `false`.
+    * `:y_min_guide` - optional horizontal guide line drawn at `y_min`: `false`, `true`,
+      or `{:solid | :dashed | :dotted, color}`. Defaults to `false`.
 
   """
   @spec new([ohlc_item()] | [series()], keyword()) :: {:ok, t()} | {:error, String.t()}
