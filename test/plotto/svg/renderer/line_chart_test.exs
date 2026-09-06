@@ -408,4 +408,82 @@ defmodule Plotto.SVG.Renderer.LineChartTest do
       assert guide_lines == []
     end
   end
+
+  describe "value_suffix and value_prefix" do
+    test "suffix: \"%\" adds % to y-axis labels and circle <title>" do
+      chart = LineChart.new!(@single_series, suffix: "%", tooltip: :native)
+      svg = Renderer.render(chart)
+
+      y_labels =
+        svg.children
+        |> Enum.filter(&(&1.tag == "text" and &1.attrs["class"] == "plotto-label plotto-label-y"))
+        |> Enum.map(&hd(&1.children))
+
+      assert "0%" in y_labels
+      assert "25%" in y_labels
+
+      circles = Enum.filter(svg.children, &(&1.tag == "circle"))
+      assert length(circles) == 2
+
+      titles =
+        Enum.map(circles, fn c ->
+          [title_el] = c.children
+          hd(title_el.children)
+        end)
+
+      assert titles == ["Jan: 10%", "Feb: 25%"]
+    end
+
+    test "suffix: \"%\" adds % to circle data-title (default tooltip)" do
+      chart = LineChart.new!(@single_series, suffix: "%")
+      svg = Renderer.render(chart)
+
+      circles = Enum.filter(svg.children, &(&1.tag == "circle"))
+      titles = Enum.map(circles, & &1.attrs["data-title"])
+
+      assert titles == ["Jan: 10%", "Feb: 25%"]
+    end
+
+    test "suffix: \"%\" with label: :value displays % on top point labels" do
+      chart = LineChart.new!(@single_series, suffix: "%", label: :value)
+      svg = Renderer.render(chart)
+
+      point_labels =
+        svg.children
+        |> Enum.filter(
+          &(&1.tag == "text" and &1.attrs["class"] == "plotto-label plotto-label-point")
+        )
+        |> Enum.map(&hd(&1.children))
+
+      assert point_labels == ["10%", "25%"]
+    end
+
+    test "prefix: \"$\" adds $ to y-axis labels and handles negative values" do
+      data = [
+        %{name: "P&L", data: [%{label: "Jan", value: -10}, %{label: "Feb", value: 20}]}
+      ]
+
+      chart = LineChart.new!(data, prefix: "$", tooltip: :native)
+      svg = Renderer.render(chart)
+
+      y_labels =
+        svg.children
+        |> Enum.filter(&(&1.tag == "text" and &1.attrs["class"] == "plotto-label plotto-label-y"))
+        |> Enum.map(&hd(&1.children))
+
+      assert "$0" in y_labels
+      assert "-$10" in y_labels
+      assert "$20" in y_labels
+
+      circles = Enum.filter(svg.children, &(&1.tag == "circle"))
+
+      titles =
+        Enum.map(circles, fn c ->
+          [title_el] = c.children
+          hd(title_el.children)
+        end)
+
+      assert titles == ["Jan: -$10", "Feb: $20"]
+    end
+  end
 end

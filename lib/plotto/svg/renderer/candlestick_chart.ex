@@ -33,7 +33,8 @@ defmodule Plotto.SVG.Renderer.CandlestickChart do
         entries,
         ticks,
         labels,
-        opts.legend_orientation
+        opts.legend_orientation,
+        opts
       )
 
     plot_width = opts.width - margin.left - margin.right
@@ -75,7 +76,8 @@ defmodule Plotto.SVG.Renderer.CandlestickChart do
         min_value,
         max_value,
         ticks,
-        labels
+        labels,
+        opts
       ) ++
         guides ++
         candle_elements ++
@@ -119,7 +121,7 @@ defmodule Plotto.SVG.Renderer.CandlestickChart do
     body_height = max(abs(close_y - open_y), 1.0)
 
     default_title =
-      "#{item.label}\nOpen: #{Shared.format_val(item.open)}\nHigh: #{Shared.format_val(item.high)}\nLow: #{Shared.format_val(item.low)}\nClose: #{Shared.format_val(item.close)}"
+      "#{item.label}\nOpen: #{Shared.format_val(item.open, opts)}\nHigh: #{Shared.format_val(item.high, opts)}\nLow: #{Shared.format_val(item.low, opts)}\nClose: #{Shared.format_val(item.close, opts)}"
 
     base_attrs =
       %{

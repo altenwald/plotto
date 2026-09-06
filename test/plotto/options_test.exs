@@ -245,4 +245,41 @@ defmodule Plotto.OptionsTest do
                 "invalid y_min_guide option, expected false, true, a color string, or {:solid | :dashed | :dotted, color}, got: {:zigzag, \"#000\"}"}
     end
   end
+
+  describe "value_prefix and value_suffix options" do
+    test "fills in value_prefix and value_suffix as nil by default" do
+      opts = Options.build([])
+      assert opts.value_prefix == nil
+      assert opts.value_suffix == nil
+    end
+
+    test "overrides value_prefix and value_suffix with primary or alias keys" do
+      opts1 = Options.build(value_prefix: "$", value_suffix: "%")
+      assert opts1.value_prefix == "$"
+      assert opts1.value_suffix == "%"
+
+      opts2 = Options.build(prefix: "€", suffix: "k")
+      assert opts2.value_prefix == "€"
+      assert opts2.value_suffix == "k"
+    end
+
+    test "validate/1 returns :ok for valid strings or nil" do
+      assert Options.validate(value_prefix: "$") == :ok
+      assert Options.validate(value_suffix: "%") == :ok
+      assert Options.validate(prefix: "€") == :ok
+      assert Options.validate(suffix: " USD") == :ok
+      assert Options.validate(value_prefix: nil, value_suffix: nil) == :ok
+    end
+
+    test "validate/1 returns {:error, reason} for non-string values" do
+      assert Options.validate(value_prefix: 123) ==
+               {:error, "invalid value_prefix option, expected a string or nil, got: 123"}
+
+      assert Options.validate(value_suffix: :percent) ==
+               {:error, "invalid value_suffix option, expected a string or nil, got: :percent"}
+
+      assert Options.validate(suffix: ["%"]) ==
+               {:error, "invalid value_suffix option, expected a string or nil, got: [\"%\"]"}
+    end
+  end
 end

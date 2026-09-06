@@ -29,7 +29,9 @@ defmodule Plotto.Options do
       y_max_soft: Keyword.get(opts, :y_max_soft, true),
       y_min_soft: Keyword.get(opts, :y_min_soft, false),
       y_max_guide: normalize_guide(Keyword.get(opts, :y_max_guide, false)),
-      y_min_guide: normalize_guide(Keyword.get(opts, :y_min_guide, false))
+      y_min_guide: normalize_guide(Keyword.get(opts, :y_min_guide, false)),
+      value_prefix: Keyword.get(opts, :value_prefix, Keyword.get(opts, :prefix)),
+      value_suffix: Keyword.get(opts, :value_suffix, Keyword.get(opts, :suffix))
     }
   end
 
@@ -46,8 +48,17 @@ defmodule Plotto.Options do
          :ok <- validate_y_bounds(Keyword.get(opts, :y_min), Keyword.get(opts, :y_max)),
          :ok <- validate_boolean(:y_max_soft, Keyword.get(opts, :y_max_soft, true)),
          :ok <- validate_boolean(:y_min_soft, Keyword.get(opts, :y_min_soft, false)),
-         :ok <- validate_guide(:y_max_guide, Keyword.get(opts, :y_max_guide, false)) do
-      validate_guide(:y_min_guide, Keyword.get(opts, :y_min_guide, false))
+         :ok <- validate_guide(:y_max_guide, Keyword.get(opts, :y_max_guide, false)),
+         :ok <- validate_guide(:y_min_guide, Keyword.get(opts, :y_min_guide, false)),
+         :ok <-
+           validate_string_or_nil(
+             :value_prefix,
+             Keyword.get(opts, :value_prefix, Keyword.get(opts, :prefix))
+           ) do
+      validate_string_or_nil(
+        :value_suffix,
+        Keyword.get(opts, :value_suffix, Keyword.get(opts, :suffix))
+      )
     end
   end
 
@@ -181,5 +192,12 @@ defmodule Plotto.Options do
   defp validate_guide(name, invalid) do
     {:error,
      "invalid #{name} option, expected false, true, a color string, or {:solid | :dashed | :dotted, color}, got: #{inspect(invalid)}"}
+  end
+
+  defp validate_string_or_nil(_name, nil), do: :ok
+  defp validate_string_or_nil(_name, val) when is_binary(val), do: :ok
+
+  defp validate_string_or_nil(name, invalid) do
+    {:error, "invalid #{name} option, expected a string or nil, got: #{inspect(invalid)}"}
   end
 end

@@ -529,4 +529,38 @@ defmodule Plotto.SVG.Renderer.BarChartTest do
       assert guide.attrs["stroke-dasharray"] == "6,4"
     end
   end
+
+  describe "value_suffix and value_prefix" do
+    test "suffix: \"%\" adds % to y-axis labels and bar rect tooltips" do
+      chart = BarChart.new!(@single_series, suffix: "%")
+      svg = Renderer.render(chart)
+
+      y_labels =
+        svg.children
+        |> Enum.filter(&(&1.tag == "text" and &1.attrs["class"] == "plotto-label plotto-label-y"))
+        |> Enum.map(&hd(&1.children))
+
+      assert "0%" in y_labels
+      assert "25%" in y_labels
+
+      rects = Enum.filter(svg.children, &(&1.tag == "rect" and &1.attrs["class"] == "plotto-bar"))
+      titles = Enum.map(rects, & &1.attrs["data-title"])
+
+      assert titles == ["Sales: 10% (Jan)", "Sales: 25% (Feb)"]
+    end
+
+    test "suffix: \"%\" with label: :value displays % on bar top labels" do
+      chart = BarChart.new!(@single_series, suffix: "%", label: :value)
+      svg = Renderer.render(chart)
+
+      bar_labels =
+        svg.children
+        |> Enum.filter(
+          &(&1.tag == "text" and &1.attrs["class"] == "plotto-label plotto-label-bar")
+        )
+        |> Enum.map(&hd(&1.children))
+
+      assert bar_labels == ["10%", "25%"]
+    end
+  end
 end

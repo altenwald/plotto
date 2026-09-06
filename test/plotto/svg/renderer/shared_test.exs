@@ -388,4 +388,36 @@ defmodule Plotto.SVG.Renderer.SharedTest do
       assert_in_delta mid_y, plot_center_y, 15.0
     end
   end
+
+  describe "value formatting with prefix and suffix" do
+    test "format_val/2 formats integers and floats with suffix" do
+      opts = %{value_suffix: "%"}
+      assert Shared.format_val(25, opts) == "25%"
+      assert Shared.format_val(25.0, opts) == "25%"
+      assert Shared.format_val(25.5, opts) == "25.50%"
+      assert Shared.format_val(-10, opts) == "-10%"
+      assert Shared.format_val(-10.25, opts) == "-10.25%"
+    end
+
+    test "format_val/2 formats with prefix and handles negative sign before prefix" do
+      opts = %{value_prefix: "$"}
+      assert Shared.format_val(100, opts) == "$100"
+      assert Shared.format_val(100.5, opts) == "$100.50"
+      assert Shared.format_val(-50, opts) == "-$50"
+      assert Shared.format_val(-50.75, opts) == "-$50.75"
+    end
+
+    test "format_val/2 formats with both prefix and suffix" do
+      opts = %{value_prefix: "$", value_suffix: "M"}
+      assert Shared.format_val(100, opts) == "$100M"
+      assert Shared.format_val(-20, opts) == "-$20M"
+    end
+
+    test "format_tick/2 formats ticks with prefix and suffix" do
+      assert Shared.format_tick(0, %{value_suffix: "%"}) == "0%"
+      assert Shared.format_tick(100, %{value_suffix: "%"}) == "100%"
+      assert Shared.format_tick(-50, %{value_prefix: "€"}) == "-€50"
+      assert Shared.format_tick(12.5, %{value_suffix: "k"}) == "12.50k"
+    end
+  end
 end

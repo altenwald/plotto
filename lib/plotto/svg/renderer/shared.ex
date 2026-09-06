@@ -24,15 +24,41 @@ defmodule Plotto.SVG.Renderer.Shared do
     )
   end
 
-  def format_val(v) when is_float(v) do
-    if v == Float.round(v, 0) do
-      to_string(trunc(v))
-    else
-      :erlang.float_to_binary(v, decimals: 2)
+  def format_val(v, opts \\ %{})
+
+  def format_val(v, opts) when is_float(v) do
+    base =
+      if v == Float.round(v, 0) do
+        to_string(trunc(v))
+      else
+        :erlang.float_to_binary(v, decimals: 2)
+      end
+
+    decorate_val(base, opts)
+  end
+
+  def format_val(v, opts), do: decorate_val(to_string(v), opts)
+
+  def decorate_val(base, opts) do
+    prefix = get_opt(opts, :value_prefix) || ""
+    suffix = get_opt(opts, :value_suffix) || ""
+
+    case {prefix, suffix} do
+      {"", ""} ->
+        base
+
+      {p, s} ->
+        if String.starts_with?(base, "-") do
+          "-" <> p <> String.slice(base, 1..-1//1) <> s
+        else
+          p <> base <> s
+        end
     end
   end
 
-  def format_val(v), do: to_string(v)
+  defp get_opt(opts, key) when is_map(opts), do: Map.get(opts, key)
+  defp get_opt(opts, key) when is_list(opts), do: Keyword.get(opts, key)
+  defp get_opt(_other, _key), do: nil
 
   def apply_tooltip(attrs, default_title, tooltip_opt, item, series_name) do
     title_text =
@@ -54,19 +80,19 @@ defmodule Plotto.SVG.Renderer.Shared do
     end
   end
 
-  def label_text(label_opt, item, series_name) do
+  def label_text(label_opt, item, series_name, opts \\ %{}) do
     cond do
       is_function(label_opt, 2) -> label_opt.(item, series_name)
       is_function(label_opt, 1) -> label_opt.(item)
-      label_opt == :value -> format_val(item.value)
+      label_opt == :value -> format_val(item.value, opts)
       label_opt in [true, :label, :top, :data] -> item.label
       is_binary(label_opt) -> label_opt
       true -> nil
     end
   end
 
-  def label_element(item, x, y, label_opt, series_name, class_name) do
-    case label_text(label_opt, item, series_name) do
+  def label_element(item, x, y, label_opt, series_name, class_name, opts \\ %{}) do
+    case label_text(label_opt, item, series_name, opts) do
       nil ->
         nil
 
@@ -118,7 +144,17 @@ defmodule Plotto.SVG.Renderer.Shared do
     axis_elements(bands, margin, plot_width, plot_height, min_value, max_value, ticks, labels)
   end
 
-  def axis_elements(bands, margin, plot_width, plot_height, min_value, max_value, ticks, labels) do
+  def axis_elements(
+        bands,
+        margin,
+        plot_width,
+        plot_height,
+        min_value,
+        max_value,
+        ticks,
+        labels,
+        opts \\ %{}
+      ) do
     zero_y = margin.top + Axis.linear_scale(0, min_value, max_value, plot_height)
 
     y_axis_line =
@@ -148,7 +184,7 @@ defmodule Plotto.SVG.Renderer.Shared do
     y_labels =
       Enum.map(
         ticks,
-        &y_label(&1, margin, plot_height, min_value, max_value)
+        &y_label(&1, margin, plot_height, min_value, max_value, opts)
       )
 
     [y_axis_line, x_axis_line] ++ x_labels ++ y_labels
@@ -216,7 +252,7 @@ defmodule Plotto.SVG.Renderer.Shared do
     )
   end
 
-  defp y_label(tick, margin, plot_height, min_value, max_value) do
+  defp y_label(tick, margin, plot_height, min_value, max_value, opts) do
     y = margin.top + Axis.linear_scale(tick, min_value, max_value, plot_height)
 
     Element.new(
@@ -229,23 +265,30 @@ defmodule Plotto.SVG.Renderer.Shared do
         "fill" => Theme.text_color(),
         "class" => "plotto-label plotto-label-y"
       },
-      [format_tick(tick)]
+      [format_tick(tick, opts)]
     )
   end
 
-  def format_tick(tick) when is_integer(tick), do: Integer.to_string(tick)
+  def format_tick(tick, opts \\ %{})
 
-  def format_tick(tick) when is_float(tick) do
-    rounded = Float.round(tick, 6)
-
-    if rounded == trunc(rounded) do
-      Integer.to_string(trunc(rounded))
-    else
-      :erlang.float_to_binary(rounded, decimals: 2)
-    end
+  def format_tick(tick, opts) when is_integer(tick) do
+    decorate_val(Integer.to_string(tick), opts)
   end
 
-  def format_tick(tick), do: to_string(tick)
+  def format_tick(tick, opts) when is_float(tick) do
+    rounded = Float.round(tick, 6)
+
+    base =
+      if rounded == trunc(rounded) do
+        Integer.to_string(trunc(rounded))
+      else
+        :erlang.float_to_binary(rounded, decimals: 2)
+      end
+
+    decorate_val(base, opts)
+  end
+
+  def format_tick(tick, opts), do: decorate_val(to_string(tick), opts)
 
   def guide_elements(opts, margin, plot_width, plot_height, min_value, max_value) do
     max_guide =
@@ -326,10 +369,18 @@ defmodule Plotto.SVG.Renderer.Shared do
   end
 
   def effective_margin(margin, legend, entries) do
-    effective_margin(margin, legend, entries, [], [], :vertical)
+    effective_margin(margin, legend, entries, [], [], :vertical, %{})
   end
 
-  def effective_margin(margin, legend, entries, ticks, labels, orientation \\ :vertical) do
+  def effective_margin(
+        margin,
+        legend,
+        entries,
+        ticks,
+        labels,
+        orientation \\ :vertical,
+        opts \\ %{}
+      ) do
     font_size = Theme.font_size()
 
     left_margin =
@@ -340,7 +391,7 @@ defmodule Plotto.SVG.Renderer.Shared do
         _ ->
           max_tick_w =
             ticks
-            |> Enum.map(&format_tick/1)
+            |> Enum.map(&format_tick(&1, opts))
             |> Enum.map(&text_width(&1, font_size))
             |> Enum.max(fn -> 0.0 end)
 

@@ -79,7 +79,9 @@ defmodule Plotto.CandlestickChart do
           y_max_soft: boolean(),
           y_min_soft: boolean(),
           y_max_guide: false | {:solid | :dashed | :dotted, String.t()},
-          y_min_guide: false | {:solid | :dashed | :dotted, String.t()}
+          y_min_guide: false | {:solid | :dashed | :dotted, String.t()},
+          value_prefix: String.t() | nil,
+          value_suffix: String.t() | nil
         }
 
   @typedoc """
@@ -115,6 +117,10 @@ defmodule Plotto.CandlestickChart do
       or `{:solid | :dashed | :dotted, color}`. Defaults to `false`.
     * `:y_min_guide` - optional horizontal guide line drawn at `y_min`: `false`, `true`,
       or `{:solid | :dashed | :dotted, color}`. Defaults to `false`.
+    * `:value_prefix` - optional string prefix prepended to numeric values (e.g. `"$"`, `"€"`).
+      Can also be passed as `:prefix`. Defaults to `nil`.
+    * `:value_suffix` - optional string suffix appended to numeric values (e.g. `"%"`).
+      Can also be passed as `:suffix`. Defaults to `nil`.
 
   """
   @spec new([ohlc_item()] | [series()], keyword()) :: {:ok, t()} | {:error, String.t()}

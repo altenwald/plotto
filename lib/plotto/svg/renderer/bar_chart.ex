@@ -26,7 +26,8 @@ defmodule Plotto.SVG.Renderer.BarChart do
         entries,
         ticks,
         labels,
-        opts.legend_orientation
+        opts.legend_orientation,
+        opts
       )
 
     plot_width = opts.width - margin.left - margin.right
@@ -44,8 +45,7 @@ defmodule Plotto.SVG.Renderer.BarChart do
         max_value,
         opts.colors,
         mode,
-        opts.tooltip,
-        opts.label
+        opts
       )
 
     legend =
@@ -77,7 +77,8 @@ defmodule Plotto.SVG.Renderer.BarChart do
         min_value,
         max_value,
         ticks,
-        labels
+        labels,
+        opts
       ) ++
         guides ++
         bars ++
@@ -120,8 +121,7 @@ defmodule Plotto.SVG.Renderer.BarChart do
          max_value,
          colors,
          :grouped,
-         tooltip_opt,
-         label_opt
+         opts
        ) do
     n_series = length(data)
 
@@ -143,8 +143,7 @@ defmodule Plotto.SVG.Renderer.BarChart do
           series.name,
           series_index,
           n_series,
-          tooltip_opt,
-          label_opt
+          opts
         )
       )
     end)
@@ -159,8 +158,7 @@ defmodule Plotto.SVG.Renderer.BarChart do
          max_value,
          colors,
          :stacked,
-         tooltip_opt,
-         label_opt
+         opts
        ) do
     n_categories = length(bands)
 
@@ -194,7 +192,7 @@ defmodule Plotto.SVG.Renderer.BarChart do
               series.name,
               bottom_val,
               top_val,
-              tooltip_opt
+              opts
             )
 
           {[segment | acc_segments], next_pos, next_neg}
@@ -217,9 +215,10 @@ defmodule Plotto.SVG.Renderer.BarChart do
              summary_item,
              label_x,
              label_y,
-             label_opt,
+             opts.label,
              nil,
-             "plotto-label plotto-label-bar"
+             "plotto-label plotto-label-bar",
+             opts
            ) do
         nil -> ordered_segments
         label_el -> ordered_segments ++ [label_el]
@@ -238,8 +237,7 @@ defmodule Plotto.SVG.Renderer.BarChart do
          series_name,
          series_index,
          n_series,
-         tooltip_opt,
-         label_opt
+         opts
        ) do
     inner_width = band.band_width * 0.8
     inner_x = margin.left + band.band_x + band.band_width * 0.1
@@ -253,9 +251,9 @@ defmodule Plotto.SVG.Renderer.BarChart do
 
     default_title =
       if series_name do
-        "#{series_name}: #{Shared.format_val(item.value)} (#{item.label})"
+        "#{series_name}: #{Shared.format_val(item.value, opts)} (#{item.label})"
       else
-        "#{item.label}: #{Shared.format_val(item.value)}"
+        "#{item.label}: #{Shared.format_val(item.value, opts)}"
       end
 
     base_attrs =
@@ -270,7 +268,7 @@ defmodule Plotto.SVG.Renderer.BarChart do
       |> Map.merge(Map.get(item, :attrs, %{}))
 
     {attrs, children} =
-      Shared.apply_tooltip(base_attrs, default_title, tooltip_opt, item, series_name)
+      Shared.apply_tooltip(base_attrs, default_title, opts.tooltip, item, series_name)
 
     rect = Element.new("rect", attrs, children)
 
@@ -281,9 +279,10 @@ defmodule Plotto.SVG.Renderer.BarChart do
            item,
            label_x,
            label_y,
-           label_opt,
+           opts.label,
            series_name,
-           "plotto-label plotto-label-bar"
+           "plotto-label plotto-label-bar",
+           opts
          ) do
       nil -> [rect]
       label_el -> [rect, label_el]
@@ -301,7 +300,7 @@ defmodule Plotto.SVG.Renderer.BarChart do
          series_name,
          bottom_val,
          top_val,
-         tooltip_opt
+         opts
        ) do
     bar_width = band.band_width * 0.8
     bar_x = margin.left + band.band_x + band.band_width * 0.1
@@ -313,9 +312,9 @@ defmodule Plotto.SVG.Renderer.BarChart do
 
     default_title =
       if series_name do
-        "#{series_name}: #{Shared.format_val(item.value)} (#{item.label})"
+        "#{series_name}: #{Shared.format_val(item.value, opts)} (#{item.label})"
       else
-        "#{item.label}: #{Shared.format_val(item.value)}"
+        "#{item.label}: #{Shared.format_val(item.value, opts)}"
       end
 
     base_attrs =
@@ -330,7 +329,7 @@ defmodule Plotto.SVG.Renderer.BarChart do
       |> Map.merge(Map.get(item, :attrs, %{}))
 
     {attrs, children} =
-      Shared.apply_tooltip(base_attrs, default_title, tooltip_opt, item, series_name)
+      Shared.apply_tooltip(base_attrs, default_title, opts.tooltip, item, series_name)
 
     Element.new("rect", attrs, children)
   end

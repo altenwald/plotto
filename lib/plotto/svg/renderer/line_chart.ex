@@ -64,7 +64,8 @@ defmodule Plotto.SVG.Renderer.LineChart do
         entries,
         ticks,
         labels,
-        opts.legend_orientation
+        opts.legend_orientation,
+        opts
       )
 
     plot_width = opts.width - margin.left - margin.right
@@ -117,8 +118,14 @@ defmodule Plotto.SVG.Renderer.LineChart do
           end)
 
         polyline = build_polyline(points, color, dash_array, series_stroke_width)
-        pts = Enum.map(points, &build_point_circle(&1, color, opts.tooltip, name, multi_series?))
-        lbls = build_point_labels(points, opts.label, name)
+
+        pts =
+          Enum.map(
+            points,
+            &build_point_circle(&1, color, opts.tooltip, name, multi_series?, opts)
+          )
+
+        lbls = build_point_labels(points, opts.label, name, opts)
 
         {acc_lines ++ [polyline], acc_pts ++ pts, acc_lbls ++ lbls}
       end)
@@ -152,7 +159,8 @@ defmodule Plotto.SVG.Renderer.LineChart do
         min_value,
         max_value,
         ticks,
-        labels
+        labels,
+        opts
       ) ++
         guides ++
         polylines ++
@@ -199,7 +207,7 @@ defmodule Plotto.SVG.Renderer.LineChart do
     end
   end
 
-  defp build_point_labels(points, label_opt, series_name) do
+  defp build_point_labels(points, label_opt, series_name, opts) do
     Enum.flat_map(points, fn {item, x, y} ->
       label_y = y - 7
 
@@ -209,7 +217,8 @@ defmodule Plotto.SVG.Renderer.LineChart do
              label_y,
              label_opt,
              series_name,
-             "plotto-label plotto-label-point"
+             "plotto-label plotto-label-point",
+             opts
            ) do
         nil -> []
         label_el -> [label_el]
@@ -239,12 +248,12 @@ defmodule Plotto.SVG.Renderer.LineChart do
   defp fmt(v) when is_float(v), do: :erlang.float_to_binary(v, decimals: 2)
   defp fmt(v), do: to_string(v)
 
-  defp build_point_circle({item, x, y}, color, tooltip_opt, series_name, multi_series?) do
+  defp build_point_circle({item, x, y}, color, tooltip_opt, series_name, multi_series?, opts) do
     default_title =
       if multi_series? and series_name do
-        "#{series_name} - #{item.label}: #{Shared.format_val(item.value)}"
+        "#{series_name} - #{item.label}: #{Shared.format_val(item.value, opts)}"
       else
-        "#{item.label}: #{Shared.format_val(item.value)}"
+        "#{item.label}: #{Shared.format_val(item.value, opts)}"
       end
 
     base_attrs =

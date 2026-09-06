@@ -227,6 +227,12 @@ Charts allow specifying minimum and maximum target bounds for the Y axis:
 - `:y_max_guide`: reference guideline drawn horizontally across the plot at `:y_max`. Can be `false` (default), `true` (dashed with theme axis color), a color string (`"#FF0000"`), or a tuple `{:solid | :dashed | :dotted, color}` (e.g. `{:dashed, "#FF0000"}`).
 - `:y_min_guide`: reference guideline drawn horizontally across the plot at `:y_min`. Follows the same format as `:y_max_guide`.
 
+### Value Prefix and Suffix
+
+Charts support adding prefixes and suffixes to numeric values across Y-axis tick labels, point/bar tooltips (`<title>` and `data-title`), and value labels (`label: :value`):
+- `:value_suffix` (or `:suffix`): string appended to numeric values (e.g. `suffix: "%"` or `suffix: " USD"`). Negative numbers are formatted properly (e.g. `"-25%"`). Defaults to `nil`.
+- `:value_prefix` (or `:prefix`): string prepended to numeric values (e.g. `prefix: "$"` or `prefix: "€"`). Negative numbers format with the minus sign preceding the prefix (e.g. `"-$25"`). Defaults to `nil`.
+
 ## Installation
 
 The package can be installed by adding `plotto` to your list of dependencies in `mix.exs`:
