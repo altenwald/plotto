@@ -62,14 +62,21 @@ defmodule Plotto.BarChart do
           colors: [String.t()],
           legend:
             :top_left
-            | :left_top
+            | :top_center
             | :top_right
-            | :right_top
-            | :bottom_left
+            | :left_top
+            | :left_middle
             | :left_bottom
-            | :bottom_right
+            | :right_top
+            | :right_middle
             | :right_bottom
+            | :bottom_left
+            | :bottom_center
+            | :bottom_right
+            | :top
+            | :bottom
             | nil,
+          legend_orientation: :vertical | :horizontal,
           mode: :grouped | :stacked,
           tooltip: :data | :native | :title | false | nil | function(),
           label: boolean() | :label | :value | :top | nil | function()
@@ -98,10 +105,11 @@ defmodule Plotto.BarChart do
     * `:colors` - list of `"#RRGGBB"` hex color strings, cycled **per series** — all
       bars within one series share the same color (`Theme.color(colors, series_index)`).
       Defaults to `["#4E79A7", "#F28E2B", "#E15759", "#76B7B2", "#59A14F"]`.
-    * `:legend` - optional legend position: `:top_left`, `:left_top`, `:top_right`,
-      `:right_top`, `:bottom_left`, `:left_bottom`, `:bottom_right`, or `:right_bottom`.
-      Renders one swatch+name row per series (using each series' `:name`). Defaults to
-      `nil` (no legend).
+    * `:legend` - optional legend position: `:top_left`, `:top_center`, `:top_right`,
+      `:left_top`, `:left_middle`, `:left_bottom`, `:right_top`, `:right_middle`, `:right_bottom`,
+      `:bottom_left`, `:bottom_center`, or `:bottom_right`. Defaults to `nil` (no legend).
+    * `:legend_orientation` - optional legend layout orientation: `:vertical` or `:horizontal`.
+      Applies when `:legend` is a top or bottom position. Defaults to `:vertical`.
     * `:mode` - bar chart layout mode: `:grouped` (bars per series side by side) or
       `:stacked` (bars per series stacked vertically summing the total). Defaults to
       `:grouped`.

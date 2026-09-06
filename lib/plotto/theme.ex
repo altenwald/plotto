@@ -19,13 +19,19 @@ defmodule Plotto.Theme do
   @title_font_size 18
   @legend_positions [
     :top_left,
-    :left_top,
+    :top_center,
     :top_right,
-    :right_top,
-    :bottom_left,
+    :left_top,
+    :left_middle,
     :left_bottom,
+    :right_top,
+    :right_middle,
+    :right_bottom,
+    :bottom_left,
+    :bottom_center,
     :bottom_right,
-    :right_bottom
+    :top,
+    :bottom
   ]
   @legend_swatch_size 10
   @legend_gap 6

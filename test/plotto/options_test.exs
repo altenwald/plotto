@@ -131,4 +131,25 @@ defmodule Plotto.OptionsTest do
     assert Options.validate(stroke_width: "thick") ==
              {:error, ~s(invalid stroke_width option, expected a positive number, got: "thick")}
   end
+
+  test "fills in :legend_orientation as :vertical by default" do
+    opts = Options.build([])
+    assert opts.legend_orientation == :vertical
+  end
+
+  test "overrides :legend_orientation when given" do
+    opts = Options.build(legend_orientation: :horizontal)
+    assert opts.legend_orientation == :horizontal
+  end
+
+  test "validate/1 returns :ok for valid legend_orientation" do
+    assert Options.validate(legend_orientation: :vertical) == :ok
+    assert Options.validate(legend_orientation: :horizontal) == :ok
+  end
+
+  test "validate/1 returns {:error, reason} for invalid legend_orientation" do
+    assert Options.validate(legend_orientation: :diagonal) ==
+             {:error,
+              "invalid legend_orientation option, expected :vertical or :horizontal, got: :diagonal"}
+  end
 end

@@ -80,14 +80,21 @@ defmodule Plotto.LineChart do
           colors: [String.t()],
           legend:
             :top_left
-            | :left_top
+            | :top_center
             | :top_right
-            | :right_top
-            | :bottom_left
+            | :left_top
+            | :left_middle
             | :left_bottom
-            | :bottom_right
+            | :right_top
+            | :right_middle
             | :right_bottom
+            | :bottom_left
+            | :bottom_center
+            | :bottom_right
+            | :top
+            | :bottom
             | nil,
+          legend_orientation: :vertical | :horizontal,
           tooltip: :data | :native | :title | false | nil | function(),
           label: boolean() | :label | :value | :top | nil | function(),
           line_styles: [atom() | String.t() | nil],
@@ -112,9 +119,11 @@ defmodule Plotto.LineChart do
       title).
     * `:colors` - list of `"#RRGGBB"` hex color strings assigned to each series in order.
       Defaults to `["#4E79A7", "#F28E2B", "#E15759", "#76B7B2", "#59A14F"]`.
-    * `:legend` - optional legend position: `:top_left`, `:left_top`, `:top_right`,
-      `:right_top`, `:bottom_left`, `:left_bottom`, `:bottom_right`, or `:right_bottom`.
-      Defaults to `nil` (no legend).
+    * `:legend` - optional legend position: `:top_left`, `:top_center`, `:top_right`,
+      `:left_top`, `:left_middle`, `:left_bottom`, `:right_top`, `:right_middle`, `:right_bottom`,
+      `:bottom_left`, `:bottom_center`, or `:bottom_right`. Defaults to `nil` (no legend).
+    * `:legend_orientation` - optional legend layout orientation: `:vertical` or `:horizontal`.
+      Applies when `:legend` is a top or bottom position. Defaults to `:vertical`.
     * `:line_styles` - optional list of styles (`:solid`, `:dashed`, `:dotted`, or custom dash pattern
       strings like `"6,4"`) corresponding to each series. Defaults to `[]`.
     * `:stroke_width` - optional stroke width in pixels for lines. Defaults to `1.5`.

@@ -56,7 +56,16 @@ defmodule Plotto.SVG.Renderer.LineChart do
     min_value = List.first(ticks)
     max_value = List.last(ticks)
 
-    margin = Shared.effective_margin(Theme.margin(), opts.legend, entries, ticks, labels)
+    margin =
+      Shared.effective_margin(
+        Theme.margin(),
+        opts.legend,
+        entries,
+        ticks,
+        labels,
+        opts.legend_orientation
+      )
+
     plot_width = opts.width - margin.left - margin.right
     plot_height = opts.height - margin.top - margin.bottom
 
@@ -113,7 +122,15 @@ defmodule Plotto.SVG.Renderer.LineChart do
         {acc_lines ++ [polyline], acc_pts ++ pts, acc_lbls ++ lbls}
       end)
 
-    legend = Shared.legend_elements(entries, opts.legend, margin, opts.width, opts.height)
+    legend =
+      Shared.legend_elements(
+        entries,
+        opts.legend,
+        margin,
+        opts.width,
+        opts.height,
+        opts.legend_orientation
+      )
 
     children =
       Shared.axis_elements(

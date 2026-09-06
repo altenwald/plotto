@@ -45,7 +45,7 @@ defmodule Plotto.PNG.EncoderTest do
     expected_crc = :erlang.crc32(ihdr_type_and_data)
 
     crc_offset = 8 + 4 + byte_size(ihdr_type_and_data)
-    <<_before::binary-size(crc_offset), actual_crc::32, _rest::binary>> = png
+    <<_before::binary-size(^crc_offset), actual_crc::32, _rest::binary>> = png
 
     assert actual_crc == expected_crc
   end
@@ -61,7 +61,7 @@ defmodule Plotto.PNG.EncoderTest do
   end
 
   defp find_chunk(png, type, offset) do
-    <<_skip::binary-size(offset), length::32, chunk_type::binary-size(4), _rest::binary>> = png
+    <<_skip::binary-size(^offset), length::32, chunk_type::binary-size(4), _rest::binary>> = png
 
     if chunk_type == type do
       {offset + 4, length}

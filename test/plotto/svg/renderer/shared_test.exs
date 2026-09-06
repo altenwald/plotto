@@ -291,4 +291,101 @@ defmodule Plotto.SVG.Renderer.SharedTest do
       end
     end
   end
+
+  describe "horizontal legend and centered/middle positions" do
+    @margin Plotto.Theme.margin()
+    @row_height Plotto.Theme.legend_row_height()
+
+    test "effective_margin adds only 1 row_height for horizontal top/bottom legends" do
+      entries = [{"Series A", "#111"}, {"Series B", "#222"}, {"Series C", "#333"}]
+
+      res_bottom = Shared.effective_margin(@margin, :bottom_center, entries, [], [], :horizontal)
+      assert res_bottom.bottom == @margin.bottom + @row_height
+      assert res_bottom.top == @margin.top
+
+      res_top = Shared.effective_margin(@margin, :top_left, entries, [], [], :horizontal)
+      assert res_top.top == @margin.top + @row_height
+      assert res_top.bottom == @margin.bottom
+    end
+
+    test "effective_margin supports :right_middle and :left_middle" do
+      entries = [{"Series A", "#111"}, {"Series B", "#222"}]
+
+      res_right = Shared.effective_margin(@margin, :right_middle, entries, [], [], :vertical)
+      assert res_right.right > @margin.right
+
+      res_left = Shared.effective_margin(@margin, :left_middle, entries, [], [], :vertical)
+      assert res_left.left > @margin.left
+    end
+
+    test "horizontal legend elements share the same Y center" do
+      entries = [{"Alpha", "#111"}, {"Beta", "#222"}, {"Gamma", "#333"}]
+      elements = Shared.legend_elements(entries, :bottom_center, @margin, 600, 400, :horizontal)
+
+      swatches = Enum.filter(elements, &(&1.tag == "rect"))
+      texts = Enum.filter(elements, &(&1.tag == "text"))
+
+      assert length(swatches) == 3
+      assert length(texts) == 3
+
+      # All swatches share the same y
+      [s1, s2, s3] = swatches
+      assert s1.attrs["y"] == s2.attrs["y"]
+      assert s2.attrs["y"] == s3.attrs["y"]
+
+      # Distinct and increasing x coordinates
+      x1 = elem(Float.parse(s1.attrs["x"]), 0)
+      x2 = elem(Float.parse(s2.attrs["x"]), 0)
+      x3 = elem(Float.parse(s3.attrs["x"]), 0)
+      assert x1 < x2 and x2 < x3
+    end
+
+    test "horizontal legend respects left, center, and right alignments" do
+      entries = [{"Alpha", "#111"}, {"Beta", "#222"}]
+
+      els_left = Shared.legend_elements(entries, :bottom_left, @margin, 600, 400, :horizontal)
+      els_center = Shared.legend_elements(entries, :bottom_center, @margin, 600, 400, :horizontal)
+      els_right = Shared.legend_elements(entries, :bottom_right, @margin, 600, 400, :horizontal)
+
+      x_left = elem(Float.parse(hd(els_left).attrs["x"]), 0)
+      x_center = elem(Float.parse(hd(els_center).attrs["x"]), 0)
+      x_right = elem(Float.parse(hd(els_right).attrs["x"]), 0)
+
+      assert x_left < x_center
+      assert x_center < x_right
+    end
+
+    test "horizontal legend truncates text with ellipsis when width is constrained" do
+      entries = [
+        {"Long Series Name Number One", "#111"},
+        {"Long Series Name Number Two", "#222"}
+      ]
+
+      # Constrain width to 120px so long names must be truncated
+      elements = Shared.legend_elements(entries, :bottom_center, @margin, 120, 300, :horizontal)
+      texts = Enum.filter(elements, &(&1.tag == "text"))
+
+      assert length(texts) == 2
+
+      for t <- texts do
+        [name] = t.children
+        assert String.ends_with?(name, "…")
+      end
+    end
+
+    test "vertical :right_middle centers rows vertically" do
+      entries = [{"A", "#111"}, {"B", "#222"}]
+      elements = Shared.legend_elements(entries, :right_middle, @margin, 600, 400, :vertical)
+      swatches = Enum.filter(elements, &(&1.tag == "rect"))
+
+      assert length(swatches) == 2
+      y1 = elem(Float.parse(hd(swatches).attrs["y"]), 0)
+      y2 = elem(Float.parse(List.last(swatches).attrs["y"]), 0)
+      mid_y = (y1 + y2) / 2
+      plot_center_y = @margin.top + (400 - @margin.top - @margin.bottom) / 2
+
+      # The midpoint between the rows should be close to the plot center Y
+      assert_in_delta mid_y, plot_center_y, 15.0
+    end
+  end
 end

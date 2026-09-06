@@ -57,7 +57,7 @@ defmodule Plotto.Font.TrueTypeTest do
 
       assert map_size(hmtx) == maxp.num_glyphs
       assert hmtx[36] == 1401
-      refute head == nil
+      assert is_map(head)
     end
   end
 

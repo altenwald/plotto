@@ -15,7 +15,7 @@ It is very useful when you are developing a website and need to integrate SVG ch
 
 If you need to export or generate PNG charts for email, PDF, or sending via Telegram, Slack, Mattermost, etc., `Plotto.to_png/1` renders the same chart to a PNG binary, anti-aliased and with full Unicode text support (including accented characters like á, é, ñ) via a bundled DejaVu Sans font.
 
-Charts can also show an optional title and a legend (one swatch + name row per series, rendering square swatches for bars/candles and line segments with solid/dashed/dotted styles for lines). The legend can be positioned in any of 8 directional positions (`:top_left`, `:left_top`, `:top_right`, `:right_top`, `:bottom_left`, `:left_bottom`, `:bottom_right`, `:right_bottom`). Negative values and mixed positive/negative domains are fully supported with an automatic zero baseline.
+Charts can also show an optional title and a legend (one swatch + name row per series, rendering square swatches for bars/candles and line segments with solid/dashed/dotted styles for lines). The legend can be positioned in 12 directional positions (top, bottom, left, right — with left, center/middle, and right alignments) and can be oriented vertically (default) or horizontally (`legend_orientation: :horizontal`) when positioned at the top or bottom. Negative values and mixed positive/negative domains are fully supported with an automatic zero baseline.
 
 ## Usage
 

@@ -56,14 +56,21 @@ defmodule Plotto.CandlestickChart do
           colors: [String.t()],
           legend:
             :top_left
-            | :left_top
+            | :top_center
             | :top_right
-            | :right_top
-            | :bottom_left
+            | :left_top
+            | :left_middle
             | :left_bottom
-            | :bottom_right
+            | :right_top
+            | :right_middle
             | :right_bottom
+            | :bottom_left
+            | :bottom_center
+            | :bottom_right
+            | :top
+            | :bottom
             | nil,
+          legend_orientation: :vertical | :horizontal,
           bullish_color: String.t(),
           bearish_color: String.t(),
           tooltip: :data | :native | :title | false | nil | function()
@@ -87,9 +94,11 @@ defmodule Plotto.CandlestickChart do
     * `:title` - optional chart title centered above the plot. Defaults to `nil`.
     * `:bullish_color` - hex color for bullish candles (`close >= open`). Defaults to `"#26A69A"`.
     * `:bearish_color` - hex color for bearish candles (`close < open`). Defaults to `"#EF5350"`.
-    * `:legend` - optional legend position: `:top_left`, `:left_top`, `:top_right`,
-      `:right_top`, `:bottom_left`, `:left_bottom`, `:bottom_right`, or `:right_bottom`.
-      Defaults to `nil`.
+    * `:legend` - optional legend position: `:top_left`, `:top_center`, `:top_right`,
+      `:left_top`, `:left_middle`, `:left_bottom`, `:right_top`, `:right_middle`, `:right_bottom`,
+      `:bottom_left`, `:bottom_center`, or `:bottom_right`. Defaults to `nil`.
+    * `:legend_orientation` - optional legend layout orientation: `:vertical` or `:horizontal`.
+      Applies when `:legend` is a top or bottom position. Defaults to `:vertical`.
 
   """
   @spec new([ohlc_item()] | [series()], keyword()) :: {:ok, t()} | {:error, String.t()}

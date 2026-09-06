@@ -14,6 +14,7 @@ defmodule Plotto.Options do
       title: Keyword.get(opts, :title),
       colors: Keyword.get(opts, :colors, Theme.default_colors()),
       legend: Keyword.get(opts, :legend),
+      legend_orientation: Keyword.get(opts, :legend_orientation, :vertical),
       mode: Keyword.get(opts, :mode, :grouped),
       bullish_color: Keyword.get(opts, :bullish_color, Theme.bullish_color()),
       bearish_color: Keyword.get(opts, :bearish_color, Theme.bearish_color()),
@@ -28,6 +29,7 @@ defmodule Plotto.Options do
 
   def validate(opts) do
     with :ok <- validate_legend(Keyword.get(opts, :legend)),
+         :ok <- validate_legend_orientation(Keyword.get(opts, :legend_orientation)),
          :ok <- validate_mode(Keyword.get(opts, :mode)),
          :ok <- validate_tooltip(Keyword.get(opts, :tooltip)),
          :ok <- validate_label(Keyword.get(opts, :label, Keyword.get(opts, :labels))),
@@ -45,6 +47,15 @@ defmodule Plotto.Options do
     else
       {:error, "invalid legend position, got: #{inspect(position)}"}
     end
+  end
+
+  defp validate_legend_orientation(nil), do: :ok
+
+  defp validate_legend_orientation(orient) when orient in [:vertical, :horizontal], do: :ok
+
+  defp validate_legend_orientation(invalid) do
+    {:error,
+     "invalid legend_orientation option, expected :vertical or :horizontal, got: #{inspect(invalid)}"}
   end
 
   defp validate_mode(nil), do: :ok

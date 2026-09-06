@@ -248,10 +248,10 @@ defmodule Plotto.SVG.Renderer.Shared do
   def format_tick(tick), do: to_string(tick)
 
   def effective_margin(margin, legend, entries) do
-    effective_margin(margin, legend, entries, [], [])
+    effective_margin(margin, legend, entries, [], [], :vertical)
   end
 
-  def effective_margin(margin, legend, entries, ticks, labels) do
+  def effective_margin(margin, legend, entries, ticks, labels, orientation \\ :vertical) do
     font_size = Theme.font_size()
 
     left_margin =
@@ -294,23 +294,35 @@ defmodule Plotto.SVG.Renderer.Shared do
       drawable ->
         n = length(drawable)
 
+        horizontal? =
+          orientation == :horizontal and
+            legend in [
+              :top_left,
+              :top_center,
+              :top_right,
+              :top,
+              :bottom_left,
+              :bottom_center,
+              :bottom_right,
+              :bottom
+            ]
+
         case legend do
-          position when position in [:top_left, :top_right] ->
-            Map.update!(margin, :top, &(&1 + Theme.legend_row_height() * n))
+          position when position in [:top_left, :top_center, :top_right, :top] ->
+            rows = if horizontal?, do: 1, else: n
+            Map.update!(margin, :top, &(&1 + Theme.legend_row_height() * rows))
 
-          position when position in [:bottom_left, :bottom_right] ->
-            Map.update!(margin, :bottom, &(&1 + Theme.legend_row_height() * n))
+          position when position in [:bottom_left, :bottom_center, :bottom_right, :bottom] ->
+            rows = if horizontal?, do: 1, else: n
+            Map.update!(margin, :bottom, &(&1 + Theme.legend_row_height() * rows))
 
-          position when position in [:right_top, :right_bottom] ->
+          position when position in [:right_top, :right_middle, :right_bottom] ->
             content_w = legend_content_width(drawable, font_size)
             Map.update!(margin, :right, &(&1 + content_w + 16))
 
-          position when position in [:left_top, :left_bottom] ->
+          position when position in [:left_top, :left_middle, :left_bottom] ->
             content_w = legend_content_width(drawable, font_size)
             Map.update!(margin, :left, &(&1 + content_w + 16))
-
-          _ ->
-            margin
         end
     end
   end
@@ -337,15 +349,36 @@ defmodule Plotto.SVG.Renderer.Shared do
     ceil(max_swatch_w + gap + max_text_w)
   end
 
-  def legend_elements(entries, legend, margin, width, height) do
+  def legend_elements(entries, legend, margin, width, height, orientation \\ :vertical) do
     drawable = drawable_entries(legend, entries)
     n = length(drawable)
 
-    drawable
-    |> Enum.with_index()
-    |> Enum.flat_map(fn {entry, i} ->
-      legend_row(entry, legend, margin, width, height, i, n)
-    end)
+    if n == 0 do
+      []
+    else
+      horizontal? =
+        orientation == :horizontal and
+          legend in [
+            :top_left,
+            :top_center,
+            :top_right,
+            :top,
+            :bottom_left,
+            :bottom_center,
+            :bottom_right,
+            :bottom
+          ]
+
+      if horizontal? do
+        horizontal_legend_elements(drawable, legend, margin, width, height)
+      else
+        drawable
+        |> Enum.with_index()
+        |> Enum.flat_map(fn {entry, i} ->
+          legend_row(entry, legend, margin, width, height, i, n)
+        end)
+      end
+    end
   end
 
   # Shared by effective_margin/3 and legend_elements/5 so they can never disagree
@@ -363,12 +396,7 @@ defmodule Plotto.SVG.Renderer.Shared do
   defp drawable_entries(_legend, _entries), do: []
 
   defp legend_row(entry, legend, margin, width, height, i, n) do
-    {name, color, meta} =
-      case entry do
-        {name, color} -> {name, color, %{type: :rect}}
-        {name, color, meta} -> {name, color, meta}
-      end
-
+    {name, color, meta} = normalize_entry(entry)
     swatch_size = Theme.legend_swatch_size()
 
     swatch_width =
@@ -377,10 +405,11 @@ defmodule Plotto.SVG.Renderer.Shared do
     gap = Theme.legend_gap()
     row_height = Theme.legend_row_height()
     font_size = Theme.font_size()
+    plot_width = width - margin.left - margin.right
 
     {y_center, swatch_x, text_x, text_anchor} =
       case legend do
-        position when position in [:top_left, :top_right] ->
+        position when position in [:top_left, :top_center, :top_right, :top] ->
           anchor = margin.top
           y = anchor - row_height * (n - i - 0.5)
 
@@ -388,12 +417,17 @@ defmodule Plotto.SVG.Renderer.Shared do
             :top_left ->
               {y, margin.left, margin.left + swatch_width + gap, "start"}
 
+            pos when pos in [:top_center, :top] ->
+              row_w = swatch_width + gap + text_width(name, font_size)
+              sx = margin.left + max(0.0, (plot_width - row_w) / 2)
+              {y, sx, sx + swatch_width + gap, "start"}
+
             :top_right ->
               {y, width - margin.right - swatch_width, width - margin.right - swatch_width - gap,
                "end"}
           end
 
-        position when position in [:bottom_left, :bottom_right] ->
+        position when position in [:bottom_left, :bottom_center, :bottom_right, :bottom] ->
           anchor = height
           y = anchor - row_height * (n - i - 0.5)
 
@@ -401,16 +435,26 @@ defmodule Plotto.SVG.Renderer.Shared do
             :bottom_left ->
               {y, margin.left, margin.left + swatch_width + gap, "start"}
 
+            pos when pos in [:bottom_center, :bottom] ->
+              row_w = swatch_width + gap + text_width(name, font_size)
+              sx = margin.left + max(0.0, (plot_width - row_w) / 2)
+              {y, sx, sx + swatch_width + gap, "start"}
+
             :bottom_right ->
               {y, width - margin.right - swatch_width, width - margin.right - swatch_width - gap,
                "end"}
           end
 
-        position when position in [:right_top, :right_bottom] ->
+        position when position in [:right_top, :right_middle, :right_bottom] ->
+          plot_h = height - margin.top - margin.bottom
+
           y =
             case position do
               :right_top ->
                 margin.top + (i + 0.5) * row_height
+
+              :right_middle ->
+                margin.top + (plot_h - n * row_height) / 2 + (i + 0.5) * row_height
 
               :right_bottom ->
                 height - margin.bottom - (n - i - 0.5) * row_height
@@ -420,11 +464,16 @@ defmodule Plotto.SVG.Renderer.Shared do
           tx = sx + swatch_width + gap
           {y, sx, tx, "start"}
 
-        position when position in [:left_top, :left_bottom] ->
+        position when position in [:left_top, :left_middle, :left_bottom] ->
+          plot_h = height - margin.top - margin.bottom
+
           y =
             case position do
               :left_top ->
                 margin.top + (i + 0.5) * row_height
+
+              :left_middle ->
+                margin.top + (plot_h - n * row_height) / 2 + (i + 0.5) * row_height
 
               :left_bottom ->
                 height - margin.bottom - (n - i - 0.5) * row_height
@@ -435,51 +484,205 @@ defmodule Plotto.SVG.Renderer.Shared do
           {y, sx, tx, "start"}
       end
 
-    swatch =
-      case meta[:type] do
-        :line ->
-          line_stroke_width = Map.get(meta, :stroke_width, 2)
-
-          line_attrs =
-            %{
-              "x1" => swatch_x,
-              "y1" => y_center,
-              "x2" => swatch_x + swatch_width,
-              "y2" => y_center,
-              "stroke" => color,
-              "stroke-width" => to_string(line_stroke_width),
-              "class" => "plotto-legend-swatch"
-            }
-            |> maybe_put("stroke-dasharray", meta[:stroke_dasharray])
-
-          Element.new("line", line_attrs)
-
-        _rect ->
-          Element.new("rect", %{
-            "x" => swatch_x,
-            "y" => y_center - swatch_size / 2,
-            "width" => swatch_size,
-            "height" => swatch_size,
-            "fill" => color,
-            "class" => "plotto-legend-swatch"
-          })
-      end
-
-    text =
-      Element.new(
-        "text",
-        %{
-          "x" => text_x,
-          "y" => y_center + font_size / 2,
-          "text-anchor" => text_anchor,
-          "font-size" => font_size,
-          "fill" => Theme.text_color(),
-          "class" => "plotto-legend-text"
-        },
-        [name]
-      )
+    swatch = build_swatch(meta, swatch_x, y_center, swatch_width, color)
+    text = build_text(name, text_x, y_center + font_size / 2, text_anchor, font_size)
 
     [swatch, text]
+  end
+
+  defp horizontal_legend_elements(drawable, legend, margin, width, height) do
+    font_size = Theme.font_size()
+    gap = Theme.legend_gap()
+    item_gap = 16
+    row_height = Theme.legend_row_height()
+
+    y_center =
+      case legend do
+        pos when pos in [:top_left, :top_center, :top_right, :top] ->
+          margin.top - row_height * 0.5
+
+        pos when pos in [:bottom_left, :bottom_center, :bottom_right, :bottom] ->
+          height - row_height * 0.5
+      end
+
+    plot_left = margin.left
+    plot_width = max(0.0, width - margin.left - margin.right)
+    n = length(drawable)
+
+    items_meta =
+      Enum.map(drawable, fn entry ->
+        {name, color, meta} = normalize_entry(entry)
+
+        swatch_width =
+          Map.get(meta, :swatch_width) ||
+            if(meta[:type] == :line, do: 18, else: Theme.legend_swatch_size())
+
+        tw = text_width(name, font_size)
+        {name, color, meta, swatch_width, tw}
+      end)
+
+    fixed_w =
+      items_meta
+      |> Enum.map(fn {_name, _color, _meta, sw, _tw} -> sw + gap end)
+      |> Enum.sum()
+      |> Kernel.+(max(0, n - 1) * item_gap)
+
+    avail_for_texts = max(0.0, plot_width - fixed_w)
+    text_widths = Enum.map(items_meta, fn {_name, _color, _meta, _sw, tw} -> tw end)
+    sum_tw = Enum.sum(text_widths)
+
+    budgets =
+      if sum_tw <= avail_for_texts do
+        text_widths
+      else
+        allocate_text_budgets(text_widths, avail_for_texts)
+      end
+
+    prepared =
+      items_meta
+      |> Enum.zip(budgets)
+      |> Enum.map(fn {{name, color, meta, sw, tw}, budget} ->
+        display_name =
+          if tw <= budget do
+            name
+          else
+            truncate_to_width(name, budget, font_size)
+          end
+
+        actual_tw = text_width(display_name, font_size)
+        item_w = sw + gap + actual_tw
+        {display_name, color, meta, sw, item_w}
+      end)
+
+    total_w =
+      prepared
+      |> Enum.map(fn {_name, _color, _meta, _sw, item_w} -> item_w end)
+      |> Enum.sum()
+      |> Kernel.+(max(0, n - 1) * item_gap)
+
+    start_x =
+      case legend do
+        pos when pos in [:top_left, :bottom_left] ->
+          plot_left
+
+        pos when pos in [:top_center, :bottom_center, :top, :bottom] ->
+          plot_left + max(0.0, (plot_width - total_w) / 2)
+
+        pos when pos in [:top_right, :bottom_right] ->
+          plot_left + max(0.0, plot_width - total_w)
+      end
+
+    {elements, _} =
+      Enum.reduce(prepared, {[], start_x}, fn {display_name, color, meta, sw, item_w},
+                                              {acc_els, cur_x} ->
+        swatch_x = cur_x
+        text_x = swatch_x + sw + gap
+
+        swatch = build_swatch(meta, swatch_x, y_center, sw, color)
+        text = build_text(display_name, text_x, y_center + font_size / 2, "start", font_size)
+
+        {acc_els ++ [swatch, text], cur_x + item_w + item_gap}
+      end)
+
+    elements
+  end
+
+  defp normalize_entry({name, color}), do: {name, color, %{type: :rect}}
+  defp normalize_entry({name, color, meta}), do: {name, color, meta}
+
+  defp build_swatch(meta, swatch_x, y_center, swatch_width, color) do
+    swatch_size = Theme.legend_swatch_size()
+
+    case meta[:type] do
+      :line ->
+        line_stroke_width = Map.get(meta, :stroke_width, 2)
+
+        line_attrs =
+          %{
+            "x1" => swatch_x,
+            "y1" => y_center,
+            "x2" => swatch_x + swatch_width,
+            "y2" => y_center,
+            "stroke" => color,
+            "stroke-width" => to_string(line_stroke_width),
+            "class" => "plotto-legend-swatch"
+          }
+          |> maybe_put("stroke-dasharray", meta[:stroke_dasharray])
+
+        Element.new("line", line_attrs)
+
+      _rect ->
+        Element.new("rect", %{
+          "x" => swatch_x,
+          "y" => y_center - swatch_size / 2,
+          "width" => swatch_size,
+          "height" => swatch_size,
+          "fill" => color,
+          "class" => "plotto-legend-swatch"
+        })
+    end
+  end
+
+  defp build_text(name, text_x, text_y, text_anchor, font_size) do
+    Element.new(
+      "text",
+      %{
+        "x" => text_x,
+        "y" => text_y,
+        "text-anchor" => text_anchor,
+        "font-size" => font_size,
+        "fill" => Theme.text_color(),
+        "class" => "plotto-legend-text"
+      },
+      [name]
+    )
+  end
+
+  defp allocate_text_budgets(widths, total_budget) do
+    n = length(widths)
+    avg = total_budget / max(n, 1)
+    {short, long} = Enum.split_with(widths, &(&1 <= avg))
+
+    if short == [] or long == [] do
+      List.duplicate(avg, n)
+    else
+      used_by_short = Enum.sum(short)
+      remaining_budget = max(0.0, total_budget - used_by_short)
+      remaining_avg = remaining_budget / length(long)
+
+      Enum.map(widths, fn w ->
+        if w <= avg, do: w, else: remaining_avg
+      end)
+    end
+  end
+
+  defp truncate_to_width(name, max_w, font_size) do
+    if text_width(name, font_size) <= max_w do
+      name
+    else
+      ellipsis = "…"
+      ellipsis_w = text_width(ellipsis, font_size)
+      target_w = max_w - ellipsis_w
+
+      if target_w <= 0 do
+        ellipsis
+      else
+        graphemes = String.graphemes(name)
+
+        {kept, _} =
+          Enum.reduce_while(graphemes, {"", 0.0}, fn g, {acc_str, acc_w} ->
+            w = text_width(g, font_size)
+
+            if acc_w + w <= target_w do
+              {:cont, {acc_str <> g, acc_w + w}}
+            else
+              {:halt, {acc_str, acc_w}}
+            end
+          end)
+
+        if kept == "", do: ellipsis, else: kept <> ellipsis
+      end
+    end
   end
 
   defp maybe_put(map, _key, nil), do: map

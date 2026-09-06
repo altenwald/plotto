@@ -144,12 +144,14 @@ defmodule Plotto.Font.TrueType do
   end
 
   defp take_uint16_list(binary, count) do
-    <<values::binary-size(count * 2), rest::binary>> = binary
+    bytes_count = count * 2
+    <<values::binary-size(^bytes_count), rest::binary>> = binary
     {for(<<v::16 <- values>>, do: v), rest}
   end
 
   defp take_int16_list(binary, count) do
-    <<values::binary-size(count * 2), rest::binary>> = binary
+    bytes_count = count * 2
+    <<values::binary-size(^bytes_count), rest::binary>> = binary
     {for(<<v::16-signed <- values>>, do: v), rest}
   end
 
@@ -205,7 +207,7 @@ defmodule Plotto.Font.TrueType do
     offset_in_array = id_range_offset + 2 * (code - start_code) - 2 * (seg_count - seg_index)
 
     case glyph_id_array_binary do
-      <<_skip::binary-size(offset_in_array), glyph_index::16, _rest::binary>>
+      <<_skip::binary-size(^offset_in_array), glyph_index::16, _rest::binary>>
       when offset_in_array >= 0 ->
         if glyph_index == 0, do: 0, else: rem(glyph_index + id_delta, 65536)
 
@@ -287,7 +289,7 @@ defmodule Plotto.Font.TrueType do
     {end_pts, rest} = take_uint16_list(rest, num_contours)
     num_points = List.last(end_pts) + 1
     <<instruction_length::16, rest::binary>> = rest
-    <<_instructions::binary-size(instruction_length), rest::binary>> = rest
+    <<_instructions::binary-size(^instruction_length), rest::binary>> = rest
     {flags, rest} = parse_glyph_flags(rest, num_points, [])
     {x_coords, rest} = parse_glyph_coords(rest, flags, @x_short_vector, @x_is_same_or_positive)
     {y_coords, _rest} = parse_glyph_coords(rest, flags, @y_short_vector, @y_is_same_or_positive)
