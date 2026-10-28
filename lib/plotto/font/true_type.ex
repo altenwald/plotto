@@ -5,6 +5,13 @@ defmodule Plotto.Font.TrueType do
 
   defstruct [:units_per_em, :glyphs, :cmap, :missing_glyph_advance]
 
+  @type t :: %__MODULE__{
+          units_per_em: non_neg_integer(),
+          glyphs: map(),
+          cmap: map(),
+          missing_glyph_advance: non_neg_integer()
+        }
+
   # glyf simple-glyph point flags
   @on_curve_point 0x01
   @x_short_vector 0x02
