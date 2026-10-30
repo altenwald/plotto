@@ -58,6 +58,7 @@ defmodule Plotto.BarChart do
   @type options :: %{
           width: pos_integer(),
           height: pos_integer(),
+          inline: boolean(),
           title: String.t() | nil,
           colors: [String.t()],
           legend:
@@ -108,8 +109,10 @@ defmodule Plotto.BarChart do
 
   ## Options
 
-    * `:width` - chart width in pixels. Defaults to `600`.
-    * `:height` - chart height in pixels. Defaults to `400`.
+    * `:width` - chart width in pixels. Defaults to `600` (or `64` when `inline: true`).
+    * `:height` - chart height in pixels. Defaults to `400` (or `20` when `inline: true`).
+    * `:inline` - when `true`, renders a compact inline chart without axes, labels, title,
+      or legend. Defaults to `false`.
     * `:title` - optional chart title, centered above the plot. Defaults to `nil` (no
       title).
     * `:colors` - list of `"#RRGGBB"` hex color strings, cycled **per series** — all

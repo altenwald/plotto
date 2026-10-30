@@ -323,4 +323,40 @@ defmodule Plotto.OptionsTest do
                 "invalid y_guidelines option, expected false, true, a color string, or {:solid | :dashed | :dotted, color}, got: {:zigzag, \"#000\"}"}
     end
   end
+
+  describe "thresholds option" do
+    test "defaults to empty list" do
+      assert Options.build([]).thresholds == []
+    end
+
+    test "normalizes true to :default and sorts tuple/map threshold lists" do
+      assert Options.build(thresholds: true).thresholds == :default
+
+      opts =
+        Options.build(
+          thresholds: [
+            %{to: 100, color: "#E74C3C"},
+            {60, "#2ECC71"},
+            %{value: 85, color: "#F1C40F"}
+          ]
+        )
+
+      assert opts.thresholds == [{60, "#2ECC71"}, {85, "#F1C40F"}, {100, "#E74C3C"}]
+    end
+
+    test "supports :zones alias and :min/:max aliases" do
+      opts = Options.build(zones: [{50, "#00FF00"}], min: 10, max: 90)
+      assert opts.thresholds == [{50, "#00FF00"}]
+      assert opts.y_min == 10
+      assert opts.y_max == 90
+    end
+
+    test "validates thresholds option" do
+      assert Options.validate(thresholds: true) == :ok
+      assert Options.validate(thresholds: false) == :ok
+      assert Options.validate(thresholds: [{60, "#2ECC71"}, %{to: 100, color: "#E74C3C"}]) == :ok
+      assert {:error, _} = Options.validate(thresholds: :invalid)
+      assert {:error, _} = Options.validate(thresholds: ["invalid"])
+    end
+  end
 end

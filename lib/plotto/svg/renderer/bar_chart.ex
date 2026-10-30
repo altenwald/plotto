@@ -19,21 +19,29 @@ defmodule Plotto.SVG.Renderer.BarChart do
     min_value = List.first(ticks)
     max_value = List.last(ticks)
 
+    inline? = Map.get(opts, :inline, false) == true
+
     margin =
-      Shared.effective_margin(
-        Theme.margin(),
-        opts.legend,
-        entries,
-        ticks,
-        labels,
-        opts.legend_orientation,
-        opts
-      )
+      if inline? do
+        Theme.inline_margin()
+      else
+        Shared.effective_margin(
+          Theme.margin(),
+          opts.legend,
+          entries,
+          ticks,
+          labels,
+          opts.legend_orientation,
+          opts
+        )
+      end
 
     plot_width = opts.width - margin.left - margin.right
     plot_height = opts.height - margin.top - margin.bottom
 
     bands = Axis.categorical_scale(labels, plot_width)
+
+    bar_opts = if inline?, do: Map.put(opts, :label, false), else: opts
 
     bars =
       build_bars(
@@ -45,7 +53,7 @@ defmodule Plotto.SVG.Renderer.BarChart do
         max_value,
         opts.colors,
         mode,
-        opts
+        bar_opts
       )
 
     legend =
@@ -69,23 +77,27 @@ defmodule Plotto.SVG.Renderer.BarChart do
       )
 
     children =
-      Shared.axis_elements(
-        bands,
-        margin,
-        plot_width,
-        plot_height,
-        min_value,
-        max_value,
-        ticks,
-        labels,
-        opts
-      ) ++
-        guides ++
-        bars ++
-        Shared.title_elements(opts.title, opts.width) ++
-        legend
+      if inline? do
+        bars
+      else
+        Shared.axis_elements(
+          bands,
+          margin,
+          plot_width,
+          plot_height,
+          min_value,
+          max_value,
+          ticks,
+          labels,
+          opts
+        ) ++
+          guides ++
+          bars ++
+          Shared.title_elements(opts.title, opts.width) ++
+          legend
+      end
 
-    Shared.svg_root(opts.width, opts.height, children)
+    Shared.svg_root(opts.width, opts.height, children, opts)
   end
 
   defp calculate_domain(data, :grouped, opts) do

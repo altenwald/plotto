@@ -5,8 +5,9 @@ defmodule PlottoTest do
   doctest Plotto.BarChart
   doctest Plotto.LineChart
   doctest Plotto.CandlestickChart
+  doctest Plotto.GaugeChart
 
-  alias Plotto.{BarChart, CandlestickChart, LineChart}
+  alias Plotto.{BarChart, CandlestickChart, GaugeChart, LineChart}
 
   @single_series [
     %{name: "Sales", data: [%{label: "Jan", value: 10}, %{label: "Feb", value: 25}]}
@@ -283,6 +284,40 @@ defmodule PlottoTest do
       assert svg =~ "Series 2"
       assert {:ok, png} = Plotto.to_png(chart)
       assert binary_part(png, 0, 8) == @png_signature
+    end
+
+    test "single and multi-value gauge charts render SVG and PNG end-to-end" do
+      single =
+        GaugeChart.new!(
+          %{label: "CPU Load", value: 78},
+          title: "Server Load",
+          suffix: "%",
+          thresholds: true
+        )
+
+      assert {:ok, single_svg} = Plotto.to_svg(single)
+      assert single_svg =~ "<path"
+      assert single_svg =~ "78%"
+      assert {:ok, single_png} = Plotto.to_png(single)
+      assert binary_part(single_png, 0, 8) == @png_signature
+
+      multi =
+        GaugeChart.new!(
+          [
+            %{label: "CPU", value: 78},
+            %{label: "Memory", value: 62},
+            %{label: "Disk", value: 45}
+          ],
+          title: "System Resources",
+          suffix: "%",
+          legend: :bottom_center,
+          legend_orientation: :horizontal
+        )
+
+      assert {:ok, multi_svg} = Plotto.to_svg(multi)
+      assert multi_svg =~ "CPU: 78%"
+      assert {:ok, multi_png} = Plotto.to_png(multi)
+      assert binary_part(multi_png, 0, 8) == @png_signature
     end
   end
 end

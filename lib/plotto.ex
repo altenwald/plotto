@@ -13,13 +13,15 @@ defmodule Plotto do
   - `Plotto.BarChart` - Grouped or stacked bar charts.
   - `Plotto.LineChart` - Line and trend charts.
   - `Plotto.CandlestickChart` - Candlestick (OHLC) financial charts.
+  - `Plotto.GaugeChart` - Horseshoe progress gauge charts (single-value with thresholds or multi-value concentric arcs).
 
   ## Options
 
   All chart modules accept standard options via `new/2`/`new!/2`: `:width`, `:height`,
-  `:title`, `:colors`, `:legend`. See `Plotto.BarChart`, `Plotto.LineChart`, and
-  `Plotto.CandlestickChart` for their chart-specific options (e.g. `:mode` for bar charts,
-  `:bullish_color` and `:bearish_color` for candlestick charts).
+  `:title`, `:colors`, `:legend`. See `Plotto.BarChart`, `Plotto.LineChart`,
+  `Plotto.CandlestickChart`, and `Plotto.GaugeChart` for their chart-specific options
+  (e.g. `:mode` for bar charts, `:bullish_color` and `:bearish_color` for candlestick charts,
+  `:thresholds` for gauge charts).
 
   ## Error handling
 
@@ -32,7 +34,7 @@ defmodule Plotto do
   alias Plotto.PNG.{Canvas, Encoder, Rasterizer}
 
   @doc """
-  Renders a chart (`Plotto.BarChart`, `Plotto.LineChart`, or `Plotto.CandlestickChart`) to an SVG string.
+  Renders a chart (`Plotto.BarChart`, `Plotto.LineChart`, `Plotto.CandlestickChart`, or `Plotto.GaugeChart`) to an SVG string.
 
   Returns `{:ok, svg}` on success or `{:error, reason}` if rendering fails.
 
@@ -71,7 +73,7 @@ defmodule Plotto do
   end
 
   @doc """
-  Renders a chart (`Plotto.BarChart`, `Plotto.LineChart`, or `Plotto.CandlestickChart`) to a PNG binary.
+  Renders a chart (`Plotto.BarChart`, `Plotto.LineChart`, `Plotto.CandlestickChart`, or `Plotto.GaugeChart`) to a PNG binary.
 
   Returns `{:ok, png}` on success or `{:error, reason}` if rendering fails.
 

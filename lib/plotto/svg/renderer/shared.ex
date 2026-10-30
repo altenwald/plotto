@@ -10,7 +10,14 @@ defmodule Plotto.SVG.Renderer.Shared do
   # this can be referenced from a guard clause below.
   @legend_positions Theme.legend_positions()
 
-  def svg_root(width, height, children) do
+  def svg_root(width, height, children, opts \\ %{}) do
+    class =
+      if get_opt(opts, :inline) do
+        "plotto-chart plotto-inline"
+      else
+        "plotto-chart"
+      end
+
     Element.new(
       "svg",
       %{
@@ -18,7 +25,7 @@ defmodule Plotto.SVG.Renderer.Shared do
         "viewBox" => "0 0 #{width} #{height}",
         "width" => width,
         "height" => height,
-        "class" => "plotto-chart"
+        "class" => class
       },
       children
     )

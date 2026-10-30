@@ -28,4 +28,11 @@ defmodule Plotto.SVG.RendererTest do
     assert svg.tag == "svg"
     assert Enum.any?(svg.children, &(&1.tag == "rect"))
   end
+
+  test "dispatches GaugeChart to the gauge chart renderer" do
+    chart = Plotto.GaugeChart.new!(75)
+    svg = Renderer.render(chart)
+    assert svg.tag == "svg"
+    assert Enum.any?(svg.children, &(&1.tag == "path"))
+  end
 end

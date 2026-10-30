@@ -58,6 +58,22 @@ defmodule Plotto.PNG.RasterizerTest do
     assert Canvas.get_pixel(canvas, 20, 20) == color
   end
 
+  test "a <path> with fill and stroke is scaled by 4x and rendered" do
+    path =
+      Element.new("path", %{
+        d: "M 2 2 L 8 2 L 8 8 L 2 8 Z",
+        fill: "#FF0000",
+        stroke: "#0000FF",
+        "stroke-width": "1"
+      })
+
+    tree = Element.new("svg", %{}, [path])
+    canvas = Rasterizer.rasterize(tree, 10, 10)
+    fill_color = Canvas.pack(255, 0, 0, 255)
+
+    assert Canvas.get_pixel(canvas, 20, 20) == fill_color
+  end
+
   describe "text rendering" do
     test "a <text> with text-anchor=\"start\" paints pixels near its x,y" do
       text =

@@ -8,9 +8,14 @@ defmodule Plotto.Options do
   def modes, do: @modes
 
   def build(opts) do
+    inline = Keyword.get(opts, :inline, false)
+    default_w = if inline, do: Theme.default_inline_width(), else: Theme.default_width()
+    default_h = if inline, do: Theme.default_inline_height(), else: Theme.default_height()
+
     %{
-      width: Keyword.get(opts, :width, Theme.default_width()),
-      height: Keyword.get(opts, :height, Theme.default_height()),
+      width: Keyword.get(opts, :width, default_w),
+      height: Keyword.get(opts, :height, default_h),
+      inline: inline,
       title: Keyword.get(opts, :title),
       colors: Keyword.get(opts, :colors, Theme.default_colors()),
       legend: Keyword.get(opts, :legend),
@@ -24,8 +29,8 @@ defmodule Plotto.Options do
         normalize_line_styles(Keyword.get(opts, :line_styles, Keyword.get(opts, :line_style, []))),
       stroke_width:
         Keyword.get(opts, :stroke_width, Keyword.get(opts, :line_width, Theme.stroke_width())),
-      y_max: Keyword.get(opts, :y_max),
-      y_min: Keyword.get(opts, :y_min),
+      y_max: Keyword.get(opts, :y_max, Keyword.get(opts, :max)),
+      y_min: Keyword.get(opts, :y_min, Keyword.get(opts, :min)),
       y_max_soft: Keyword.get(opts, :y_max_soft, true),
       y_min_soft: Keyword.get(opts, :y_min_soft, false),
       y_max_guide: normalize_guide(Keyword.get(opts, :y_max_guide, false)),
@@ -33,11 +38,17 @@ defmodule Plotto.Options do
       value_prefix: Keyword.get(opts, :value_prefix, Keyword.get(opts, :prefix)),
       value_suffix: Keyword.get(opts, :value_suffix, Keyword.get(opts, :suffix)),
       x_guidelines: normalize_guidelines(Keyword.get(opts, :x_guidelines, false)),
-      y_guidelines: normalize_guidelines(Keyword.get(opts, :y_guidelines, false))
+      y_guidelines: normalize_guidelines(Keyword.get(opts, :y_guidelines, false)),
+      thresholds:
+        normalize_thresholds(Keyword.get(opts, :thresholds, Keyword.get(opts, :zones, [])))
     }
   end
 
   def validate(opts) do
+    y_min = Keyword.get(opts, :y_min, Keyword.get(opts, :min))
+    y_max = Keyword.get(opts, :y_max, Keyword.get(opts, :max))
+    thresholds = Keyword.get(opts, :thresholds, Keyword.get(opts, :zones))
+
     with :ok <- validate_legend(Keyword.get(opts, :legend)),
          :ok <- validate_legend_orientation(Keyword.get(opts, :legend_orientation)),
          :ok <- validate_mode(Keyword.get(opts, :mode)),
@@ -47,13 +58,15 @@ defmodule Plotto.Options do
            validate_line_styles(Keyword.get(opts, :line_styles, Keyword.get(opts, :line_style))),
          :ok <-
            validate_stroke_width(Keyword.get(opts, :stroke_width, Keyword.get(opts, :line_width))),
-         :ok <- validate_y_bounds(Keyword.get(opts, :y_min), Keyword.get(opts, :y_max)),
+         :ok <- validate_y_bounds(y_min, y_max),
+         :ok <- validate_boolean(:inline, Keyword.get(opts, :inline, false)),
          :ok <- validate_boolean(:y_max_soft, Keyword.get(opts, :y_max_soft, true)),
          :ok <- validate_boolean(:y_min_soft, Keyword.get(opts, :y_min_soft, false)),
          :ok <- validate_guide(:y_max_guide, Keyword.get(opts, :y_max_guide, false)),
          :ok <- validate_guide(:y_min_guide, Keyword.get(opts, :y_min_guide, false)),
          :ok <- validate_guide(:x_guidelines, Keyword.get(opts, :x_guidelines, false)),
          :ok <- validate_guide(:y_guidelines, Keyword.get(opts, :y_guidelines, false)),
+         :ok <- validate_thresholds(thresholds),
          :ok <-
            validate_string_or_nil(
              :value_prefix,
@@ -215,4 +228,54 @@ defmodule Plotto.Options do
   defp validate_string_or_nil(name, invalid) do
     {:error, "invalid #{name} option, expected a string or nil, got: #{inspect(invalid)}"}
   end
+
+  defp normalize_thresholds(nil), do: []
+  defp normalize_thresholds(false), do: []
+  defp normalize_thresholds(true), do: :default
+
+  defp normalize_thresholds(list) when is_list(list) do
+    list
+    |> Enum.map(fn
+      {limit, color} when is_number(limit) and is_binary(color) -> {limit, color}
+      %{to: limit, color: color} when is_number(limit) and is_binary(color) -> {limit, color}
+      %{value: limit, color: color} when is_number(limit) and is_binary(color) -> {limit, color}
+      other -> other
+    end)
+    |> Enum.sort_by(fn
+      {limit, _color} -> limit
+      _ -> 0
+    end)
+  end
+
+  defp normalize_thresholds(other), do: other
+
+  defp validate_thresholds(nil), do: :ok
+  defp validate_thresholds(false), do: :ok
+  defp validate_thresholds(true), do: :ok
+
+  defp validate_thresholds(list) when is_list(list) do
+    if Enum.all?(list, &valid_threshold_entry?/1) do
+      :ok
+    else
+      {:error,
+       "invalid thresholds option, expected a list of {number, color} tuples or %{to: number, color: color} maps"}
+    end
+  end
+
+  defp validate_thresholds(invalid) do
+    {:error,
+     "invalid thresholds option, expected true, false, or a list of thresholds, got: #{inspect(invalid)}"}
+  end
+
+  defp valid_threshold_entry?({limit, color}) when is_number(limit) and is_binary(color), do: true
+
+  defp valid_threshold_entry?(%{to: limit, color: color})
+       when is_number(limit) and is_binary(color),
+       do: true
+
+  defp valid_threshold_entry?(%{value: limit, color: color})
+       when is_number(limit) and is_binary(color),
+       do: true
+
+  defp valid_threshold_entry?(_), do: false
 end

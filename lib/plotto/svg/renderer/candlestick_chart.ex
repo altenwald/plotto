@@ -21,21 +21,33 @@ defmodule Plotto.SVG.Renderer.CandlestickChart do
     all_highs = Enum.map(items, & &1.high)
     data_min = Enum.min(all_lows)
     data_max = Enum.max(all_highs)
+    inline? = Map.get(opts, :inline, false) == true
     {raw_min, raw_max} = Axis.calculate_y_domain(data_min, data_max, opts)
     ticks = Axis.ticks(raw_min, raw_max)
-    min_value = List.first(ticks)
-    max_value = List.last(ticks)
+
+    {min_value, max_value} =
+      if inline? do
+        c_min = Map.get(opts, :y_min) || data_min
+        c_max = Map.get(opts, :y_max) || max(data_max, c_min + 1)
+        {c_min, c_max}
+      else
+        {List.first(ticks), List.last(ticks)}
+      end
 
     margin =
-      Shared.effective_margin(
-        Theme.margin(),
-        opts.legend,
-        entries,
-        ticks,
-        labels,
-        opts.legend_orientation,
-        opts
-      )
+      if inline? do
+        Theme.inline_margin()
+      else
+        Shared.effective_margin(
+          Theme.margin(),
+          opts.legend,
+          entries,
+          ticks,
+          labels,
+          opts.legend_orientation,
+          opts
+        )
+      end
 
     plot_width = opts.width - margin.left - margin.right
     plot_height = opts.height - margin.top - margin.bottom
@@ -68,23 +80,27 @@ defmodule Plotto.SVG.Renderer.CandlestickChart do
       )
 
     children =
-      Shared.axis_elements(
-        bands,
-        margin,
-        plot_width,
-        plot_height,
-        min_value,
-        max_value,
-        ticks,
-        labels,
-        opts
-      ) ++
-        guides ++
-        candle_elements ++
-        Shared.title_elements(opts.title, opts.width) ++
-        legend
+      if inline? do
+        candle_elements
+      else
+        Shared.axis_elements(
+          bands,
+          margin,
+          plot_width,
+          plot_height,
+          min_value,
+          max_value,
+          ticks,
+          labels,
+          opts
+        ) ++
+          guides ++
+          candle_elements ++
+          Shared.title_elements(opts.title, opts.width) ++
+          legend
+      end
 
-    Shared.svg_root(opts.width, opts.height, children)
+    Shared.svg_root(opts.width, opts.height, children, opts)
   end
 
   defp build_candle({item, band}, margin, plot_height, min_value, max_value, opts) do

@@ -66,6 +66,48 @@ defmodule Plotto.PNG.Canvas do
     end)
   end
 
+  def fill_polygon(canvas, points, _color) when length(points) < 3, do: canvas
+
+  def fill_polygon(canvas, points, color) do
+    edges =
+      points
+      |> Enum.zip(tl(points) ++ [hd(points)])
+      |> Enum.reject(fn {{_x1, y1}, {_x2, y2}} -> y1 == y2 end)
+
+    ys = Enum.map(points, &elem(&1, 1))
+    min_y = floor(Enum.min(ys))
+    max_y = ceil(Enum.max(ys))
+
+    Enum.reduce(min_y..max_y, canvas, fn py, acc_canvas ->
+      scan_y = py + 0.5
+
+      intersections =
+        edges
+        |> Enum.reduce([], fn {{x1, y1}, {x2, y2}}, acc ->
+          if (y1 <= scan_y and y2 > scan_y) or (y2 <= scan_y and y1 > scan_y) do
+            x = x1 + (scan_y - y1) / (y2 - y1) * (x2 - x1)
+            [x | acc]
+          else
+            acc
+          end
+        end)
+        |> Enum.sort()
+
+      intersections
+      |> Enum.chunk_every(2, 2, :discard)
+      |> Enum.reduce(acc_canvas, fn [x_start, x_end], row_canvas ->
+        px0 = ceil(x_start - 0.5)
+        px1 = floor(x_end - 0.5)
+
+        if px0 <= px1 do
+          Enum.reduce(px0..px1, row_canvas, fn px, c -> put_pixel(c, px, py, color) end)
+        else
+          row_canvas
+        end
+      end)
+    end)
+  end
+
   def draw_line(canvas, x0, y0, x1, y1, color, width \\ 1, dash_pattern \\ nil)
 
   def draw_line(canvas, x0, y0, x1, y1, color, width, nil) do

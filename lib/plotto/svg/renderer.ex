@@ -6,4 +6,7 @@ defmodule Plotto.SVG.Renderer do
 
   def render(%Plotto.CandlestickChart{} = chart),
     do: Plotto.SVG.Renderer.CandlestickChart.render(chart)
+
+  def render(%Plotto.GaugeChart{} = chart),
+    do: Plotto.SVG.Renderer.GaugeChart.render(chart)
 end

@@ -11,7 +11,10 @@ defmodule Plotto.Theme do
 
   @default_width 600
   @default_height 400
+  @default_inline_width 64
+  @default_inline_height 20
   @margin %{top: 40, right: 24, bottom: 48, left: 56}
+  @inline_margin %{top: 2, right: 2, bottom: 2, left: 2}
   @axis_color "#CCCCCC"
   @grid_color "#E0E0E0"
   @text_color "#333333"
@@ -44,7 +47,10 @@ defmodule Plotto.Theme do
   def default_colors, do: @default_colors
   def default_width, do: @default_width
   def default_height, do: @default_height
+  def default_inline_width, do: @default_inline_width
+  def default_inline_height, do: @default_inline_height
   def margin, do: @margin
+  def inline_margin, do: @inline_margin
   def axis_color, do: @axis_color
   def grid_color, do: @grid_color
   def text_color, do: @text_color

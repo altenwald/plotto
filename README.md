@@ -303,9 +303,67 @@ File.write!(Path.join(__DIR__, "sales_targets_chart.png"), png)
 
 ![Sales targets chart example](examples/sales_targets_chart.png)
 
+[examples/gauge_chart.exs](examples/gauge_chart.exs) generates a single-value horseshoe gauge chart with threshold color zones (`mix run examples/gauge_chart.exs`):
+
+```elixir
+chart =
+  Plotto.GaugeChart.new!(
+    %{label: "CPU Load", value: 78},
+    title: "Server CPU Utilization",
+    suffix: "%",
+    thresholds: [
+      {60, "#2ECC71"},
+      {85, "#F1C40F"},
+      {100, "#E74C3C"}
+    ]
+  )
+
+svg = Plotto.to_svg!(chart)
+png = Plotto.to_png!(chart)
+
+File.write!(Path.join(__DIR__, "gauge_chart.svg"), svg)
+File.write!(Path.join(__DIR__, "gauge_chart.png"), png)
+```
+
+![Gauge chart example](examples/gauge_chart.png)
+
+[examples/multi_gauge_chart.exs](examples/multi_gauge_chart.exs) generates a concentric multi-value horseshoe gauge chart (`mix run examples/multi_gauge_chart.exs`):
+
+```elixir
+data = [
+  %{label: "CPU", value: 78},
+  %{label: "Memory", value: 62},
+  %{label: "Disk", value: 45}
+]
+
+chart =
+  Plotto.GaugeChart.new!(
+    data,
+    title: "System Resources",
+    suffix: "%",
+    legend: :bottom_center,
+    legend_orientation: :horizontal
+  )
+
+svg = Plotto.to_svg!(chart)
+png = Plotto.to_png!(chart)
+
+File.write!(Path.join(__DIR__, "multi_gauge_chart.svg"), svg)
+File.write!(Path.join(__DIR__, "multi_gauge_chart.png"), png)
+```
+
+![Multi-value gauge chart example](examples/multi_gauge_chart.png)
+
 ## Tooltips, Labels and CSS Styling
 
-Plotto charts generate clean SVG elements with standard semantic CSS classes (`plotto-chart`, `plotto-bar`, `plotto-candle`, `plotto-candle-bullish`, `plotto-candle-bearish`, `plotto-point`, `plotto-line`, `plotto-axis`, `plotto-label`, `plotto-label-bar`, `plotto-label-point`, `plotto-legend`), making it easy to style them with Tailwind, CSS variables, or dark mode themes.
+Plotto charts generate clean SVG elements with standard semantic CSS classes (`plotto-chart`, `plotto-inline`, `plotto-bar`, `plotto-candle`, `plotto-candle-bullish`, `plotto-candle-bearish`, `plotto-point`, `plotto-line`, `plotto-gauge-arc`, `plotto-gauge-fill`, `plotto-gauge-track`, `plotto-axis`, `plotto-label`, `plotto-label-bar`, `plotto-label-point`, `plotto-gauge-value`, `plotto-gauge-label`, `plotto-gauge-minmax`, `plotto-legend`), making it easy to style them with Tailwind, CSS variables, or dark mode themes.
+
+### Inline Charts (`inline: true`)
+
+All chart types (`Plotto.BarChart`, `Plotto.LineChart`, `Plotto.CandlestickChart`, and `Plotto.GaugeChart`) support the `inline: true` option for rendering compact charts without axes, internal text, titles, or legends — ideal for embedding inline within a paragraph of text or inside table cells:
+- `Plotto.GaugeChart.new!(78, inline: true, thresholds: true)` defaults to `32x24` pixels.
+- `Plotto.LineChart`, `Plotto.BarChart`, and `Plotto.CandlestickChart` default to `64x20` pixels when `inline: true` (customizable via `:width` and `:height`).
+- Adds the `plotto-inline` CSS class to the root `<svg>` element.
 
 ### Tooltips
 
