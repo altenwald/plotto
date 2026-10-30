@@ -6,8 +6,9 @@ defmodule PlottoTest do
   doctest Plotto.LineChart
   doctest Plotto.CandlestickChart
   doctest Plotto.GaugeChart
+  doctest Plotto.PieChart
 
-  alias Plotto.{BarChart, CandlestickChart, GaugeChart, LineChart}
+  alias Plotto.{BarChart, CandlestickChart, GaugeChart, LineChart, PieChart}
 
   @single_series [
     %{name: "Sales", data: [%{label: "Jan", value: 10}, %{label: "Feb", value: 25}]}
@@ -318,6 +319,46 @@ defmodule PlottoTest do
       assert multi_svg =~ "CPU: 78%"
       assert {:ok, multi_png} = Plotto.to_png(multi)
       assert binary_part(multi_png, 0, 8) == @png_signature
+    end
+
+    test "pie and donut charts render SVG and PNG end-to-end" do
+      pie =
+        PieChart.new!(
+          [
+            %{label: "Desktop", value: 55},
+            %{label: "Mobile", value: 35},
+            %{label: "Tablet", value: 10}
+          ],
+          title: "Devices",
+          label: :percent,
+          legend: :right_middle
+        )
+
+      assert {:ok, pie_svg} = Plotto.to_svg(pie)
+      assert pie_svg =~ "<path"
+      assert pie_svg =~ "55%"
+      assert {:ok, pie_png} = Plotto.to_png(pie)
+      assert binary_part(pie_png, 0, 8) == @png_signature
+
+      donut =
+        PieChart.new!(
+          [
+            %{
+              name: "2025",
+              data: [%{label: "Desktop", value: 60}, %{label: "Mobile", value: 40}]
+            },
+            %{name: "2026", data: [%{label: "Desktop", value: 45}, %{label: "Mobile", value: 55}]}
+          ],
+          mode: :donut,
+          title: "YoY Devices",
+          legend: :bottom_center,
+          legend_orientation: :horizontal
+        )
+
+      assert {:ok, donut_svg} = Plotto.to_svg(donut)
+      assert donut_svg =~ "<path"
+      assert {:ok, donut_png} = Plotto.to_png(donut)
+      assert binary_part(donut_png, 0, 8) == @png_signature
     end
   end
 end

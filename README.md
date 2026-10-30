@@ -354,13 +354,82 @@ File.write!(Path.join(__DIR__, "multi_gauge_chart.png"), png)
 
 ![Multi-value gauge chart example](examples/multi_gauge_chart.png)
 
+[examples/pie_chart.exs](examples/pie_chart.exs) generates a classic pie chart with percentage slice labels and a right-middle legend (`mix run examples/pie_chart.exs`):
+
+```elixir
+data = [
+  %{label: "Desktop", value: 48},
+  %{label: "Mobile", value: 36},
+  %{label: "Tablet", value: 11},
+  %{label: "Other", value: 5}
+]
+
+chart =
+  Plotto.PieChart.new!(
+    data,
+    title: "Traffic by Device",
+    label: :percent,
+    legend: :right_middle
+  )
+
+svg = Plotto.to_svg!(chart)
+png = Plotto.to_png!(chart)
+
+File.write!(Path.join(__DIR__, "pie_chart.svg"), svg)
+File.write!(Path.join(__DIR__, "pie_chart.png"), png)
+```
+
+![Pie chart example](examples/pie_chart.png)
+
+[examples/donut_chart.exs](examples/donut_chart.exs) generates a multi-series concentric donut chart (`mix run examples/donut_chart.exs` with `mode: :donut`):
+
+```elixir
+data = [
+  %{
+    name: "2026",
+    data: [
+      %{label: "Cloud", value: 52},
+      %{label: "On-Premise", value: 28},
+      %{label: "Hybrid", value: 20}
+    ]
+  },
+  %{
+    name: "2025",
+    data: [
+      %{label: "Cloud", value: 38},
+      %{label: "On-Premise", value: 44},
+      %{label: "Hybrid", value: 18}
+    ]
+  }
+]
+
+chart =
+  Plotto.PieChart.new!(
+    data,
+    mode: :donut,
+    title: "Infrastructure Mix (2025 vs 2026)",
+    label: :percent,
+    legend: :bottom_center,
+    legend_orientation: :horizontal
+  )
+
+svg = Plotto.to_svg!(chart)
+png = Plotto.to_png!(chart)
+
+File.write!(Path.join(__DIR__, "donut_chart.svg"), svg)
+File.write!(Path.join(__DIR__, "donut_chart.png"), png)
+```
+
+![Donut chart example](examples/donut_chart.png)
+
 ## Tooltips, Labels and CSS Styling
 
-Plotto charts generate clean SVG elements with standard semantic CSS classes (`plotto-chart`, `plotto-inline`, `plotto-bar`, `plotto-candle`, `plotto-candle-bullish`, `plotto-candle-bearish`, `plotto-point`, `plotto-line`, `plotto-gauge-arc`, `plotto-gauge-fill`, `plotto-gauge-track`, `plotto-axis`, `plotto-label`, `plotto-label-bar`, `plotto-label-point`, `plotto-gauge-value`, `plotto-gauge-label`, `plotto-gauge-minmax`, `plotto-legend`), making it easy to style them with Tailwind, CSS variables, or dark mode themes.
+Plotto charts generate clean SVG elements with standard semantic CSS classes (`plotto-chart`, `plotto-inline`, `plotto-bar`, `plotto-candle`, `plotto-candle-bullish`, `plotto-candle-bearish`, `plotto-point`, `plotto-line`, `plotto-gauge-arc`, `plotto-gauge-fill`, `plotto-gauge-track`, `plotto-pie-slice`, `plotto-axis`, `plotto-label`, `plotto-label-bar`, `plotto-label-point`, `plotto-label-pie`, `plotto-gauge-value`, `plotto-gauge-label`, `plotto-gauge-minmax`, `plotto-legend`), making it easy to style them with Tailwind, CSS variables, or dark mode themes.
 
 ### Inline Charts (`inline: true`)
 
-All chart types (`Plotto.BarChart`, `Plotto.LineChart`, `Plotto.CandlestickChart`, and `Plotto.GaugeChart`) support the `inline: true` option for rendering compact charts without axes, internal text, titles, or legends — ideal for embedding inline within a paragraph of text or inside table cells:
+All chart types (`Plotto.BarChart`, `Plotto.LineChart`, `Plotto.CandlestickChart`, `Plotto.GaugeChart`, and `Plotto.PieChart`) support the `inline: true` option for rendering compact charts without axes, internal text, titles, or legends — ideal for embedding inline within a paragraph of text or inside table cells:
+- `Plotto.PieChart.new!(data, inline: true)` defaults to `24x24` pixels (supports both `mode: :pie` and `mode: :donut`).
 - `Plotto.GaugeChart.new!(78, inline: true, thresholds: true)` defaults to `32x24` pixels.
 - `Plotto.LineChart`, `Plotto.BarChart`, and `Plotto.CandlestickChart` default to `64x20` pixels when `inline: true` (customizable via `:width` and `:height`).
 - Adds the `plotto-inline` CSS class to the root `<svg>` element.
@@ -422,7 +491,7 @@ The package can be installed by adding `plotto` to your list of dependencies in 
 ```elixir
 def deps do
   [
-    {:plotto, "~> 0.6.0"}
+    {:plotto, "~> 0.7.0"}
   ]
 end
 ```

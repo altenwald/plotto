@@ -1,7 +1,7 @@
 defmodule Plotto.MixProject do
   use Mix.Project
 
-  @version "0.6.1"
+  @version "0.7.0"
   @source_url "https://github.com/altenwald/plotto"
 
   def project do
@@ -11,6 +11,7 @@ defmodule Plotto.MixProject do
       elixir: "~> 1.17",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
+      aliases: aliases(),
       description:
         "A 100% Elixir library for generating SVG and PNG charts, no external binaries or NIFs required",
       package: package(),
@@ -51,6 +52,12 @@ defmodule Plotto.MixProject do
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
       {:doctor, "~> 0.21", only: :dev, runtime: false}
+    ]
+  end
+
+  defp aliases do
+    [
+      check: ["format --check-formatted", "credo", "doctor", "dialyzer"]
     ]
   end
 end

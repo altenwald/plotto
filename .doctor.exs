@@ -10,6 +10,7 @@
     Plotto.GaugeData,
     Plotto.LineData,
     Plotto.Options,
+    Plotto.PieData,
     Plotto.PNG.Canvas,
     Plotto.PNG.Color,
     Plotto.PNG.Encoder,
@@ -20,6 +21,7 @@
     Plotto.SVG.Renderer.CandlestickChart,
     Plotto.SVG.Renderer.GaugeChart,
     Plotto.SVG.Renderer.LineChart,
+    Plotto.SVG.Renderer.PieChart,
     Plotto.SVG.Renderer.Shared,
     Plotto.SVG.Serializer,
     Plotto.Theme

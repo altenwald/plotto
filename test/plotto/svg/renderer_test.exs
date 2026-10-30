@@ -35,4 +35,11 @@ defmodule Plotto.SVG.RendererTest do
     assert svg.tag == "svg"
     assert Enum.any?(svg.children, &(&1.tag == "path"))
   end
+
+  test "dispatches PieChart to the pie chart renderer" do
+    chart = Plotto.PieChart.new!([%{label: "A", value: 60}, %{label: "B", value: 40}])
+    svg = Renderer.render(chart)
+    assert svg.tag == "svg"
+    assert Enum.any?(svg.children, &(&1.tag == "path"))
+  end
 end

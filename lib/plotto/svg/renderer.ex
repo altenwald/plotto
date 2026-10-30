@@ -9,4 +9,7 @@ defmodule Plotto.SVG.Renderer do
 
   def render(%Plotto.GaugeChart{} = chart),
     do: Plotto.SVG.Renderer.GaugeChart.render(chart)
+
+  def render(%Plotto.PieChart{} = chart),
+    do: Plotto.SVG.Renderer.PieChart.render(chart)
 end

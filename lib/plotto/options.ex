@@ -4,6 +4,7 @@ defmodule Plotto.Options do
   alias Plotto.Theme
 
   @modes [:grouped, :stacked]
+  @pie_modes [:pie, :donut]
 
   def modes, do: @modes
 
@@ -101,7 +102,7 @@ defmodule Plotto.Options do
   defp validate_mode(nil), do: :ok
 
   defp validate_mode(mode) do
-    if mode in @modes do
+    if mode in @modes or mode in @pie_modes do
       :ok
     else
       {:error, "invalid bar chart mode, got: #{inspect(mode)}"}
@@ -121,7 +122,11 @@ defmodule Plotto.Options do
   defp validate_label(nil), do: :ok
   defp validate_label(false), do: :ok
   defp validate_label(true), do: :ok
-  defp validate_label(mode) when mode in [:label, :value, :top, :data], do: :ok
+
+  defp validate_label(mode)
+       when mode in [:label, :value, :top, :data, :percent, :percentage],
+       do: :ok
+
   defp validate_label(fun) when is_function(fun, 1) or is_function(fun, 2), do: :ok
 
   defp validate_label(invalid) do
