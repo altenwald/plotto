@@ -101,7 +101,8 @@ defmodule Plotto.SVG.Renderer.LineChart do
 
     children =
       if inline? do
-        ranges ++ polylines
+        ranges ++
+          polylines ++ hover_elements(data, x_scale, margin, plot_width, plot_height, opts)
       else
         Shared.axis_elements(
           bands,

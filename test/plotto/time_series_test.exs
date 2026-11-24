@@ -281,7 +281,7 @@ defmodule Plotto.TimeSeriesTest do
       assert {:ok, <<137, 80, 78, 71, _::binary>>} = Plotto.to_png(chart)
     end
 
-    test "inline draws the band and the line only" do
+    test "inline draws the band, the line and the hover strips, without axes or text" do
       svg =
         svg(@band ++ [%{name: "Mean", data: points(3)}],
           x_scale: :time,
@@ -291,7 +291,7 @@ defmodule Plotto.TimeSeriesTest do
 
       assert svg =~ "<polygon"
       assert svg =~ "<polyline"
-      refute svg =~ "plotto-hover"
+      assert svg =~ "plotto-hover"
       refute svg =~ "<text"
     end
   end
