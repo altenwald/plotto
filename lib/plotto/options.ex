@@ -41,7 +41,14 @@ defmodule Plotto.Options do
       x_guidelines: normalize_guidelines(Keyword.get(opts, :x_guidelines, false)),
       y_guidelines: normalize_guidelines(Keyword.get(opts, :y_guidelines, false)),
       thresholds:
-        normalize_thresholds(Keyword.get(opts, :thresholds, Keyword.get(opts, :zones, [])))
+        normalize_thresholds(Keyword.get(opts, :thresholds, Keyword.get(opts, :zones, []))),
+      x_scale: Keyword.get(opts, :x_scale, :linear),
+      x_format: Keyword.get(opts, :x_format),
+      y_format: Keyword.get(opts, :y_format),
+      hover: Keyword.get(opts, :hover, false),
+      points: Keyword.get(opts, :points, true),
+      responsive: Keyword.get(opts, :responsive, false),
+      theme: Keyword.get(opts, :theme, :default)
     }
   end
 
@@ -68,6 +75,13 @@ defmodule Plotto.Options do
          :ok <- validate_guide(:x_guidelines, Keyword.get(opts, :x_guidelines, false)),
          :ok <- validate_guide(:y_guidelines, Keyword.get(opts, :y_guidelines, false)),
          :ok <- validate_thresholds(thresholds),
+         :ok <- validate_enum(:x_scale, Keyword.get(opts, :x_scale), [:linear, :time]),
+         :ok <- validate_function(:x_format, Keyword.get(opts, :x_format)),
+         :ok <- validate_function(:y_format, Keyword.get(opts, :y_format)),
+         :ok <- validate_enum(:hover, Keyword.get(opts, :hover), [false, :column]),
+         :ok <- validate_boolean(:points, Keyword.get(opts, :points, true)),
+         :ok <- validate_boolean(:responsive, Keyword.get(opts, :responsive, false)),
+         :ok <- validate_enum(:theme, Keyword.get(opts, :theme), [:default, :css]),
          :ok <-
            validate_string_or_nil(
              :value_prefix,
@@ -78,6 +92,24 @@ defmodule Plotto.Options do
         Keyword.get(opts, :value_suffix, Keyword.get(opts, :suffix))
       )
     end
+  end
+
+  defp validate_enum(_name, nil, _allowed), do: :ok
+
+  defp validate_enum(name, value, allowed) do
+    if value in allowed do
+      :ok
+    else
+      {:error,
+       "invalid #{name} option, expected one of #{inspect(allowed)}, got: #{inspect(value)}"}
+    end
+  end
+
+  defp validate_function(_name, nil), do: :ok
+  defp validate_function(_name, fun) when is_function(fun, 1), do: :ok
+
+  defp validate_function(name, other) do
+    {:error, "invalid #{name} option, expected a 1-arity function, got: #{inspect(other)}"}
   end
 
   defp validate_legend(nil), do: :ok

@@ -90,6 +90,51 @@ defmodule Plotto.Axis do
     ticks(max_value, min_value, max_ticks)
   end
 
+  @time_steps [
+    1,
+    5,
+    15,
+    30,
+    60,
+    300,
+    900,
+    1800,
+    3600,
+    10_800,
+    21_600,
+    43_200,
+    86_400,
+    172_800,
+    604_800,
+    2_592_000,
+    7_776_000,
+    31_536_000,
+    157_680_000
+  ]
+
+  @doc false
+  # Round instants (multiples of the step since the Unix epoch, so in UTC) between `from` and `to`, both in seconds.
+  # The step is the smallest of 1s, 5s, 15s, 30s, 1m, 5m, 15m, 30m, 1h, 3h, 6h, 12h, 1d, 2d, 7d, 30d, 90d, 1y and 5y that leaves
+  # no more than `max_ticks` marks.
+  def time_ticks(from, to, max_ticks \\ 6)
+
+  def time_ticks(from, to, _max_ticks) when from >= to, do: [from]
+
+  def time_ticks(from, to, max_ticks) do
+    step =
+      Enum.find(@time_steps, List.last(@time_steps), fn step ->
+        Integer.floor_div(trunc(to), step) - ceil(from / step) + 1 <= max_ticks
+      end)
+
+    first = ceil(from / step) * step
+    Enum.take_while(Stream.iterate(first, &(&1 + step)), &(&1 <= to))
+  end
+
+  @doc false
+  # How far apart (in seconds) consecutive ticks are, for choosing how to write them.
+  def time_step([a, b | _]), do: b - a
+  def time_step(_), do: 0
+
   defp calculate_nice_step(range, max_ticks) do
     target_ticks = max(1, max_ticks)
     raw_step = range / target_ticks

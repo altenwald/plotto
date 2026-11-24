@@ -3,52 +3,21 @@ defmodule Plotto.SVG.Renderer.LineChart do
 
   alias Plotto.SVG.Element
   alias Plotto.SVG.Renderer.Shared
-  alias Plotto.{Axis, Theme}
+  alias Plotto.{Axis, LineData, Theme}
 
   def render(%Plotto.LineChart{data: data, opts: opts}) do
-    default_stroke_width = Map.get(opts, :stroke_width) || Theme.stroke_width()
-    line_styles = Map.get(opts, :line_styles, [])
+    x_mode? = LineData.x_mode?(data)
+    data = if x_mode?, do: label_items(data, opts), else: data
 
     entries =
       data
       |> Enum.with_index()
-      |> Enum.map(fn {series, index} ->
-        color = Map.get(series, :color) || Theme.color(opts.colors, index)
-        opt_style = Enum.at(line_styles, index)
+      |> Enum.map(fn {series, index} -> legend_entry(series, index, opts) end)
 
-        dotted? =
-          Map.get(series, :dotted, false) ||
-            Map.get(series, :style) == :dotted ||
-            opt_style == :dotted
-
-        dashed? =
-          Map.get(series, :dashed, false) ||
-            Map.get(series, :style) == :dashed ||
-            opt_style == :dashed
-
-        swatch_dash =
-          cond do
-            is_binary(Map.get(series, :stroke_dasharray)) -> Map.get(series, :stroke_dasharray)
-            is_binary(opt_style) -> opt_style
-            dotted? -> "2,3"
-            dashed? -> "4,2"
-            true -> nil
-          end
-
-        series_stroke_width =
-          Map.get(series, :stroke_width) ||
-            Map.get(series, :line_width) ||
-            default_stroke_width
-
-        {series.name, color,
-         %{type: :line, stroke_dasharray: swatch_dash, stroke_width: series_stroke_width}}
-      end)
-
-    labels = ordered_labels(data)
+    {x_scale, labels} = x_axis(data, x_mode?, opts)
 
     all_values =
-      data
-      |> Enum.flat_map(fn series -> Enum.map(series.data, & &1.value) end)
+      Enum.flat_map(data, fn series -> Enum.flat_map(series.data, &values_of(series, &1)) end)
 
     data_min = Enum.min(all_values)
     data_max = Enum.max(all_values)
@@ -77,63 +46,37 @@ defmodule Plotto.SVG.Renderer.LineChart do
     plot_width = opts.width - margin.left - margin.right
     plot_height = opts.height - margin.top - margin.bottom
 
-    bands = Axis.categorical_scale(labels, plot_width)
-    band_map = Map.new(bands, fn band -> {band.label, band} end)
+    bands = x_scale.bands.(plot_width)
+    positions = x_scale.positions.(plot_width)
+    x_of = fn item -> margin.left + Map.fetch!(positions, slot_key(item)) end
 
     multi_series? = length(data) > 1
 
-    {polylines, point_elements, label_elements} =
+    {ranges, polylines, point_elements, label_elements} =
       data
       |> Enum.with_index()
-      |> Enum.reduce({[], [], []}, fn {series, index}, {acc_lines, acc_pts, acc_lbls} ->
-        color = Map.get(series, :color) || Theme.color(opts.colors, index)
-        name = series.name
-        opt_style = Enum.at(line_styles, index)
+      |> Enum.reduce({[], [], [], []}, fn {series, index},
+                                          {acc_ranges, acc_lines, acc_pts, acc_lbls} ->
+        color = series_color(series, index, opts)
 
-        dotted? =
-          Map.get(series, :dotted, false) ||
-            Map.get(series, :style) == :dotted ||
-            opt_style == :dotted
+        if range?(series) do
+          band = build_range(series, color, x_of, min_value, max_value, margin, plot_height)
+          {acc_ranges ++ [band], acc_lines, acc_pts, acc_lbls}
+        else
+          {polyline, pts, lbls} =
+            draw_line(
+              series,
+              index,
+              x_of,
+              {min_value, max_value},
+              margin,
+              plot_height,
+              multi_series?,
+              opts
+            )
 
-        dashed? =
-          Map.get(series, :dashed, false) ||
-            Map.get(series, :style) == :dashed ||
-            opt_style == :dashed
-
-        dash_array =
-          Map.get(series, :stroke_dasharray) ||
-            cond do
-              is_binary(opt_style) -> opt_style
-              dotted? -> "2,4"
-              dashed? -> "6,4"
-              true -> nil
-            end
-
-        series_stroke_width =
-          Map.get(series, :stroke_width) ||
-            Map.get(series, :line_width) ||
-            default_stroke_width
-
-        points =
-          series.data
-          |> Enum.map(fn item ->
-            band = Map.fetch!(band_map, item.label)
-            x = margin.left + band.x
-            y = margin.top + Axis.linear_scale(item.value, min_value, max_value, plot_height)
-            {item, x, y}
-          end)
-
-        polyline = build_polyline(points, color, dash_array, series_stroke_width)
-
-        pts =
-          Enum.map(
-            points,
-            &build_point_circle(&1, color, opts.tooltip, name, multi_series?, opts)
-          )
-
-        lbls = build_point_labels(points, opts.label, name, opts)
-
-        {acc_lines ++ [polyline], acc_pts ++ pts, acc_lbls ++ lbls}
+          {acc_ranges, acc_lines ++ [polyline], acc_pts ++ pts, acc_lbls ++ lbls}
+        end
       end)
 
     legend =
@@ -158,7 +101,7 @@ defmodule Plotto.SVG.Renderer.LineChart do
 
     children =
       if inline? do
-        polylines
+        ranges ++ polylines
       else
         Shared.axis_elements(
           bands,
@@ -172,15 +115,265 @@ defmodule Plotto.SVG.Renderer.LineChart do
           opts
         ) ++
           guides ++
+          ranges ++
           polylines ++
           point_elements ++
           label_elements ++
           Shared.title_elements(opts.title, opts.width) ++
-          legend
+          legend ++
+          hover_elements(data, x_scale, margin, plot_width, plot_height, opts)
       end
 
     Shared.svg_root(opts.width, opts.height, children, opts)
   end
+
+  defp range?(series), do: Map.get(series, :type) == :range
+
+  defp series_color(series, index, opts),
+    do: Map.get(series, :color) || Theme.color(opts.colors, index)
+
+  defp legend_entry(series, index, opts) do
+    color = series_color(series, index, opts)
+
+    if range?(series) do
+      {series.name, color, %{type: :range}}
+    else
+      %{swatch_dash: dash, stroke_width: width} = line_style(series, index, opts, {"2,3", "4,2"})
+      {series.name, color, %{type: :line, stroke_dasharray: dash, stroke_width: width}}
+    end
+  end
+
+  # The dash pattern and width of a line. The legend swatch and the line itself use different patterns for the
+  # `:dotted`/`:dashed` shorthands, hence `{dotted, dashed}`.
+  defp line_style(series, index, opts, {dotted_pattern, dashed_pattern}) do
+    opt_style = Enum.at(Map.get(opts, :line_styles, []), index)
+
+    dotted? =
+      Map.get(series, :dotted, false) || Map.get(series, :style) == :dotted ||
+        opt_style == :dotted
+
+    dashed? =
+      Map.get(series, :dashed, false) || Map.get(series, :style) == :dashed ||
+        opt_style == :dashed
+
+    dash =
+      Map.get(series, :stroke_dasharray) ||
+        cond do
+          is_binary(opt_style) -> opt_style
+          dotted? -> dotted_pattern
+          dashed? -> dashed_pattern
+          true -> nil
+        end
+
+    width =
+      Map.get(series, :stroke_width) || Map.get(series, :line_width) ||
+        Map.get(opts, :stroke_width) ||
+        Theme.stroke_width()
+
+    %{swatch_dash: dash, stroke_width: width}
+  end
+
+  defp draw_line(
+         series,
+         index,
+         x_of,
+         {min_value, max_value},
+         margin,
+         plot_height,
+         multi_series?,
+         opts
+       ) do
+    color = series_color(series, index, opts)
+
+    %{swatch_dash: dash_array, stroke_width: width} =
+      line_style(series, index, opts, {"2,4", "6,4"})
+
+    points =
+      Enum.map(series.data, fn item ->
+        {item, x_of.(item),
+         margin.top + Axis.linear_scale(item.value, min_value, max_value, plot_height)}
+      end)
+
+    circles =
+      if opts.points == false do
+        []
+      else
+        Enum.map(
+          points,
+          &build_point_circle(&1, color, opts.tooltip, series.name, multi_series?, opts)
+        )
+      end
+
+    {build_polyline(points, color, dash_array, width), circles,
+     build_point_labels(points, opts.label, series.name, opts)}
+  end
+
+  defp values_of(series, item) do
+    if range?(series), do: [item.min, item.max], else: [item.value]
+  end
+
+  # Points placed by `:x` get the text of their position as `:label`, which is what titles and labels read.
+  defp label_items(data, opts) do
+    Enum.map(data, fn series ->
+      %{series | data: Enum.map(series.data, &Map.put_new(&1, :label, x_text(&1.x, opts, :full)))}
+    end)
+  end
+
+  # The x axis: a map with `bands` (the marks the axis writes, given the plot width), `positions` (where each item
+  # goes, relative to the plot, by its slot key) and `slots` (the columns the hover divides the plot in), plus the axis labels.
+  defp x_axis(data, false, _opts) do
+    labels = ordered_labels(data)
+
+    scale = %{
+      bands: fn plot_width -> Axis.categorical_scale(labels, plot_width) end,
+      positions: fn plot_width ->
+        Map.new(Axis.categorical_scale(labels, plot_width), &{&1.label, &1.x})
+      end,
+      slots: fn plot_width ->
+        Enum.map(
+          Axis.categorical_scale(labels, plot_width),
+          &{&1.label, &1.band_x, &1.band_width}
+        )
+      end
+    }
+
+    {scale, labels}
+  end
+
+  defp x_axis(data, true, opts) do
+    xs =
+      data
+      |> Enum.flat_map(fn series -> Enum.map(series.data, & &1.x) end)
+      |> Enum.uniq()
+      |> Enum.sort()
+
+    {first, last} = {List.first(xs), List.last(xs)}
+
+    marks =
+      case Map.get(opts, :x_scale, :linear) do
+        :time -> Axis.time_ticks(first, last)
+        _ -> linear_marks(first, last)
+      end
+
+    step = Axis.time_step(marks)
+    labels = Enum.map(marks, &x_text(&1, opts, {:tick, step}))
+
+    place = fn x, plot_width ->
+      if last == first, do: plot_width / 2, else: (x - first) / (last - first) * plot_width
+    end
+
+    scale = %{
+      bands: fn plot_width ->
+        for {mark, label} <- Enum.zip(marks, labels) do
+          %{
+            label: label,
+            x: place.(mark, plot_width),
+            band_x: place.(mark, plot_width),
+            band_width: 0
+          }
+        end
+      end,
+      positions: fn plot_width -> Map.new(xs, &{&1, place.(&1, plot_width)}) end,
+      slots: fn plot_width ->
+        centers = Enum.map(xs, &place.(&1, plot_width))
+        edges = [0 | Enum.zip_with(centers, tl(centers) ++ [plot_width], &((&1 + &2) / 2))]
+        edges = Enum.slice(edges, 0, length(xs)) |> Enum.zip(tl(edges) ++ [plot_width])
+
+        for {{from, to}, x} <- Enum.zip(edges, xs), do: {x, from, max(to - from, 1)}
+      end
+    }
+
+    {scale, labels}
+  end
+
+  defp linear_marks(first, last) when first == last, do: [first]
+
+  defp linear_marks(first, last) do
+    case Enum.filter(Axis.ticks(first, last, 6), &(&1 >= first and &1 <= last)) do
+      [] -> [first, last]
+      marks -> marks
+    end
+  end
+
+  # The text of a position on the x axis: `x_format` if given; otherwise a UTC date for `x_scale: :time` (seconds
+  # since the Unix epoch) and the number for a linear scale. `:full` is for titles, `{:tick, step}` for the axis.
+  defp x_text(x, %{x_format: fun}, _kind) when is_function(fun, 1), do: to_string(fun.(x))
+
+  defp x_text(x, %{x_scale: :time}, kind) do
+    datetime = DateTime.from_unix!(trunc(x))
+
+    case kind do
+      :full -> Calendar.strftime(datetime, "%Y-%m-%d %H:%M:%S")
+      {:tick, step} when step >= 86_400 -> Calendar.strftime(datetime, "%m-%d")
+      {:tick, _step} -> Calendar.strftime(datetime, "%H:%M")
+    end
+  end
+
+  defp x_text(x, opts, _kind), do: Shared.format_tick(x, Map.drop(opts, [:y_format]))
+
+  defp build_range(series, color, x_of, min_value, max_value, margin, plot_height) do
+    y = fn value -> margin.top + Axis.linear_scale(value, min_value, max_value, plot_height) end
+
+    upper = Enum.map(series.data, &{x_of.(&1), y.(&1.max)})
+    lower = series.data |> Enum.map(&{x_of.(&1), y.(&1.min)}) |> Enum.reverse()
+
+    points = Enum.map_join(upper ++ lower, " ", fn {x, y} -> "#{fmt(x)},#{fmt(y)}" end)
+
+    Element.new("polygon", %{
+      "points" => points,
+      "fill" => color,
+      "fill-opacity" => fmt(Map.get(series, :opacity, 0.2)),
+      "stroke" => "none",
+      "class" => "plotto-range"
+    })
+  end
+
+  # `hover: :column`: one invisible strip per position of the x axis whose native tooltip lists every series there,
+  # so one hover reads them all together.
+  defp hover_elements(data, x_scale, margin, plot_width, plot_height, %{hover: :column} = opts) do
+    for {key, from, width} <- x_scale.slots.(plot_width) do
+      lines =
+        for series <- data, item <- Enum.filter(series.data, &(slot_key(&1) == key)) do
+          name = if series.name, do: series.name <> ": ", else: ""
+
+          if range?(series) do
+            name <>
+              Shared.format_val(item.min, opts) <> " – " <> Shared.format_val(item.max, opts)
+          else
+            name <> Shared.format_val(item.value, opts)
+          end
+        end
+
+      header =
+        data
+        |> Enum.flat_map(& &1.data)
+        |> Enum.find(&(slot_key(&1) == key))
+        |> header_text(key, opts)
+
+      Element.new(
+        "rect",
+        %{
+          "x" => margin.left + from,
+          "y" => margin.top,
+          "width" => width,
+          "height" => plot_height,
+          "fill" => "#000000",
+          "fill-opacity" => "0",
+          "pointer-events" => "all",
+          "class" => "plotto-hover"
+        },
+        [Element.new("title", %{}, [Enum.join([header | lines], "\n")])]
+      )
+    end
+  end
+
+  defp hover_elements(_data, _x_scale, _margin, _plot_width, _plot_height, _opts), do: []
+
+  defp slot_key(%{x: x}), do: x
+  defp slot_key(%{label: label}), do: label
+
+  defp header_text(%{label: label}, _key, _opts), do: label
+  defp header_text(_item, key, _opts), do: to_string(key)
 
   defp ordered_labels(data) do
     data

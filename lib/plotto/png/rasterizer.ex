@@ -22,6 +22,11 @@ defmodule Plotto.PNG.Rasterizer do
     Enum.reduce(children, canvas, fn child, canvas -> draw_element(canvas, child) end)
   end
 
+  # Invisible shapes (the hover strips of a chart) are not drawn.
+  defp draw_element(canvas, %Element{tag: "rect", attrs: %{"fill-opacity" => opacity}})
+       when opacity in ["0", "0.0", "0.00"],
+       do: canvas
+
   defp draw_element(canvas, %Element{tag: "rect", attrs: attrs}) do
     x = num(attrs["x"]) * @supersample
     y = num(attrs["y"]) * @supersample
@@ -67,6 +72,21 @@ defmodule Plotto.PNG.Rasterizer do
     dash_pattern = parse_dasharray(attrs["stroke-dasharray"])
 
     Canvas.draw_polyline(canvas, points, color, width, dash_pattern)
+  end
+
+  defp draw_element(canvas, %Element{tag: "polygon", attrs: attrs}) do
+    points =
+      attrs["points"]
+      |> String.split(" ")
+      |> Enum.map(fn pair ->
+        [x, y] = String.split(pair, ",")
+        {num(x) * @supersample, num(y) * @supersample}
+      end)
+
+    {:ok, color} = Color.parse(attrs["fill"])
+    opacity = num(Map.get(attrs, "fill-opacity", "1"))
+
+    Canvas.fill_polygon(canvas, points, color, opacity)
   end
 
   defp draw_element(canvas, %Element{tag: "path", attrs: attrs}) do

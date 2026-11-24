@@ -88,6 +88,8 @@ defmodule Plotto do
   """
   @spec to_png(struct()) :: {:ok, binary()} | {:error, String.t()}
   def to_png(chart) do
+    # The rasterizer has no CSS: it always draws with the default colors, whatever `:theme` says.
+    chart = %{chart | opts: Map.put(chart.opts, :theme, :default)}
     %{width: width, height: height} = chart.opts
 
     png =

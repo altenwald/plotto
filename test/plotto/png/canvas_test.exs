@@ -93,4 +93,38 @@ defmodule Plotto.PNG.CanvasTest do
     # In second gap [15..19]: untouched white
     assert Canvas.get_pixel(canvas, 17, 2) == white
   end
+
+  describe "opacity" do
+    test "blend/3 mixes the source over the destination" do
+      white = Canvas.pack(255, 255, 255, 255)
+      blue = Canvas.pack(0, 0, 255, 255)
+
+      assert Canvas.blend(white, blue, 1.0) == blue
+      assert Canvas.unpack(Canvas.blend(white, blue, 0.5)) == {128, 128, 255, 255}
+      assert Canvas.unpack(Canvas.blend(white, blue, 0.0)) == {255, 255, 255, 255}
+    end
+
+    test "fill_polygon/4 with an opacity lets what is under show through" do
+      black = Canvas.pack(0, 0, 0, 255)
+
+      canvas =
+        Canvas.new(10, 10)
+        |> Canvas.fill_polygon([{0, 0}, {10, 0}, {10, 10}, {0, 10}], black, 0.25)
+
+      assert Canvas.unpack(Canvas.get_pixel(canvas, 5, 5)) == {191, 191, 191, 255}
+    end
+
+    test "two translucent fills stack" do
+      black = Canvas.pack(0, 0, 0, 255)
+      square = [{0, 0}, {10, 0}, {10, 10}, {0, 10}]
+
+      canvas =
+        Canvas.new(10, 10)
+        |> Canvas.fill_polygon(square, black, 0.5)
+        |> Canvas.fill_polygon(square, black, 0.5)
+
+      {r, _, _, _} = Canvas.unpack(Canvas.get_pixel(canvas, 5, 5))
+      assert r < 100
+    end
+  end
 end

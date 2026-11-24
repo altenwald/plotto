@@ -1,0 +1,97 @@
+<svg class="plotto-chart" height="400" viewBox="0 0 720 400" width="720" xmlns="http://www.w3.org/2000/svg"><line class="plotto-guideline plotto-guideline-y" stroke="#E0E0E0" stroke-dasharray="2,4" stroke-width="1" x1="56" x2="696" y1="273.6" y2="273.6"/><line class="plotto-guideline plotto-guideline-y" stroke="#E0E0E0" stroke-dasharray="2,4" stroke-width="1" x1="56" x2="696" y1="215.2" y2="215.2"/><line class="plotto-guideline plotto-guideline-y" stroke="#E0E0E0" stroke-dasharray="2,4" stroke-width="1" x1="56" x2="696" y1="156.8" y2="156.8"/><line class="plotto-guideline plotto-guideline-y" stroke="#E0E0E0" stroke-dasharray="2,4" stroke-width="1" x1="56" x2="696" y1="98.39999999999998" y2="98.39999999999998"/><line class="plotto-guideline plotto-guideline-y" stroke="#E0E0E0" stroke-dasharray="2,4" stroke-width="1" x1="56" x2="696" y1="40.0" y2="40.0"/><line class="plotto-axis plotto-axis-y" stroke="#CCCCCC" x1="56" x2="56" y1="40" y2="332"/><line class="plotto-axis plotto-axis-x" stroke="#CCCCCC" x1="56" x2="696" y1="332.00" y2="332.00"/><text class="plotto-label plotto-label-x" fill="#333333" font-size="12" text-anchor="middle" x="148.75" y="348">22:30</text><text class="plotto-label plotto-label-x" fill="#333333" font-size="12" text-anchor="middle" x="315.71" y="348">23:00</text><text class="plotto-label plotto-label-x" fill="#333333" font-size="12" text-anchor="middle" x="482.67" y="348">23:30</text><text class="plotto-label plotto-label-x" fill="#333333" font-size="12" text-anchor="middle" x="649.62" y="348">00:00</text><text class="plotto-label plotto-label-y" fill="#333333" font-size="12" text-anchor="end" x="48" y="338.00">0%</text><text class="plotto-label plotto-label-y" fill="#333333" font-size="12" text-anchor="end" x="48" y="279.60">20%</text><text class="plotto-label plotto-label-y" fill="#333333" font-size="12" text-anchor="end" x="48" y="221.20">40%</text><text class="plotto-label plotto-label-y" fill="#333333" font-size="12" text-anchor="end" x="48" y="162.80">60%</text><text class="plotto-label plotto-label-y" fill="#333333" font-size="12" text-anchor="end" x="48" y="104.40">80%</text><text class="plotto-label plotto-label-y" fill="#333333" font-size="12" text-anchor="end" x="48" y="46.00">100%</text><polygon class="plotto-range" fill="#4E79A7" fill-opacity="0.20" points="56.00,203.52 83.83,191.84 111.65,180.45 139.48,183.66 167.30,173.15 195.13,177.53 222.96,168.19 250.78,159.72 278.61,166.44 306.43,159.72 334.26,168.77 362.09,163.81 389.91,160.01 417.74,171.69 445.57,169.36 473.39,182.50 501.22,181.62 529.04,181.33 556.87,195.64 584.70,195.64 612.52,210.24 640.35,209.94 668.17,209.36 696.00,223.08 696.00,266.88 668.17,253.16 640.35,253.74 612.52,254.04 584.70,239.44 556.87,239.44 529.04,225.13 501.22,225.42 473.39,226.30 445.57,213.16 417.74,215.49 389.91,203.81 362.09,207.61 334.26,212.57 306.43,203.52 278.61,210.24 250.78,203.52 222.96,211.99 195.13,221.33 167.30,216.95 139.48,227.46 111.65,224.25 83.83,235.64 56.00,247.32" stroke="none"/><polygon class="plotto-range" fill="#F28E2B" fill-opacity="0.20" points="56.00,145.12 83.83,133.44 111.65,122.05 139.48,125.26 167.30,114.75 195.13,119.13 222.96,109.79 250.78,101.32 278.61,108.04 306.43,101.32 334.26,110.37 362.09,105.41 389.91,101.61 417.74,113.29 445.57,110.96 473.39,124.10 501.22,123.22 529.04,122.93 556.87,137.24 584.70,137.24 612.52,151.84 640.35,151.54 668.17,150.96 696.00,164.68 696.00,208.48 668.17,194.76 640.35,195.34 612.52,195.64 584.70,181.04 556.87,181.04 529.04,166.73 501.22,167.02 473.39,167.90 445.57,154.76 417.74,157.09 389.91,145.41 362.09,149.21 334.26,154.17 306.43,145.12 278.61,151.84 250.78,145.12 222.96,153.59 195.13,162.93 167.30,158.55 139.48,169.06 111.65,165.85 83.83,177.24 56.00,188.92" stroke="none"/><polyline class="plotto-line" fill="none" points="56.00,229.80 83.83,218.12 111.65,206.73 139.48,209.94 167.30,199.43 195.13,203.81 222.96,194.47 250.78,186.00 278.61,192.72 306.43,186.00 334.26,195.05 362.09,190.09 389.91,186.29 417.74,197.97 445.57,195.64 473.39,208.78 501.22,207.90 529.04,207.61 556.87,221.92 584.70,221.92 612.52,236.52 640.35,236.22 668.17,235.64 696.00,249.36" stroke="#4E79A7" stroke-width="1.50"/><polyline class="plotto-line" fill="none" points="56.00,171.40 83.83,159.72 111.65,148.33 139.48,151.54 167.30,141.03 195.13,145.41 222.96,136.07 250.78,127.60 278.61,134.32 306.43,127.60 334.26,136.65 362.09,131.69 389.91,127.89 417.74,139.57 445.57,137.24 473.39,150.38 501.22,149.50 529.04,149.21 556.87,163.52 584.70,163.52 612.52,178.12 640.35,177.82 668.17,177.24 696.00,190.96" stroke="#F28E2B" stroke-width="1.50"/><text class="plotto-title" fill="#333333" font-size="18" text-anchor="middle" x="360.00" y="18">CPU usage</text><rect class="plotto-legend-swatch" fill="#4E79A7" height="10" width="10" x="56" y="385.00"/><text class="plotto-legend-text" fill="#333333" font-size="12" text-anchor="start" x="72" y="396.00">web-1 · Min–Max</text><line class="plotto-legend-swatch" stroke="#4E79A7" stroke-width="1.5" x1="188.32" x2="206.32" y1="390.00" y2="390.00"/><text class="plotto-legend-text" fill="#333333" font-size="12" text-anchor="start" x="212.32" y="396.00">web-1 · Mean</text><rect class="plotto-legend-swatch" fill="#F28E2B" height="10" width="10" x="309.24" y="385.00"/><text class="plotto-legend-text" fill="#333333" font-size="12" text-anchor="start" x="325.24" y="396.00">web-2 · Min–Max</text><line class="plotto-legend-swatch" stroke="#F28E2B" stroke-width="1.5" x1="441.57" x2="459.57" y1="390.00" y2="390.00"/><text class="plotto-legend-text" fill="#333333" font-size="12" text-anchor="start" x="465.57" y="396.00">web-2 · Mean</text><rect class="plotto-hover" fill="#000000" fill-opacity="0" height="292" pointer-events="all" width="13.91" x="56" y="40"><title>2023-11-14 22:13:20
+web-1 · Min–Max: 29% – 44%
+web-1 · Mean: 35%
+web-2 · Min–Max: 49% – 64%
+web-2 · Mean: 55%</title></rect><rect class="plotto-hover" fill="#000000" fill-opacity="0" height="292" pointer-events="all" width="27.83" x="69.91" y="40"><title>2023-11-14 22:18:20
+web-1 · Min–Max: 33% – 48%
+web-1 · Mean: 39%
+web-2 · Min–Max: 53% – 68%
+web-2 · Mean: 59%</title></rect><rect class="plotto-hover" fill="#000000" fill-opacity="0" height="292" pointer-events="all" width="27.83" x="97.74" y="40"><title>2023-11-14 22:23:20
+web-1 · Min–Max: 37% – 52%
+web-1 · Mean: 43%
+web-2 · Min–Max: 57% – 72%
+web-2 · Mean: 63%</title></rect><rect class="plotto-hover" fill="#000000" fill-opacity="0" height="292" pointer-events="all" width="27.83" x="125.57" y="40"><title>2023-11-14 22:28:20
+web-1 · Min–Max: 36% – 51%
+web-1 · Mean: 42%
+web-2 · Min–Max: 56% – 71%
+web-2 · Mean: 62%</title></rect><rect class="plotto-hover" fill="#000000" fill-opacity="0" height="292" pointer-events="all" width="27.83" x="153.39" y="40"><title>2023-11-14 22:33:20
+web-1 · Min–Max: 39% – 54%
+web-1 · Mean: 45%
+web-2 · Min–Max: 59% – 74%
+web-2 · Mean: 65%</title></rect><rect class="plotto-hover" fill="#000000" fill-opacity="0" height="292" pointer-events="all" width="27.83" x="181.22" y="40"><title>2023-11-14 22:38:20
+web-1 · Min–Max: 38% – 53%
+web-1 · Mean: 44%
+web-2 · Min–Max: 58% – 73%
+web-2 · Mean: 64%</title></rect><rect class="plotto-hover" fill="#000000" fill-opacity="0" height="292" pointer-events="all" width="27.83" x="209.04" y="40"><title>2023-11-14 22:43:20
+web-1 · Min–Max: 41% – 56%
+web-1 · Mean: 47%
+web-2 · Min–Max: 61% – 76%
+web-2 · Mean: 67%</title></rect><rect class="plotto-hover" fill="#000000" fill-opacity="0" height="292" pointer-events="all" width="27.83" x="236.87" y="40"><title>2023-11-14 22:48:20
+web-1 · Min–Max: 44% – 59%
+web-1 · Mean: 50%
+web-2 · Min–Max: 64% – 79%
+web-2 · Mean: 70%</title></rect><rect class="plotto-hover" fill="#000000" fill-opacity="0" height="292" pointer-events="all" width="27.83" x="264.70" y="40"><title>2023-11-14 22:53:20
+web-1 · Min–Max: 42% – 57%
+web-1 · Mean: 48%
+web-2 · Min–Max: 62% – 77%
+web-2 · Mean: 68%</title></rect><rect class="plotto-hover" fill="#000000" fill-opacity="0" height="292" pointer-events="all" width="27.83" x="292.52" y="40"><title>2023-11-14 22:58:20
+web-1 · Min–Max: 44% – 59%
+web-1 · Mean: 50%
+web-2 · Min–Max: 64% – 79%
+web-2 · Mean: 70%</title></rect><rect class="plotto-hover" fill="#000000" fill-opacity="0" height="292" pointer-events="all" width="27.83" x="320.35" y="40"><title>2023-11-14 23:03:20
+web-1 · Min–Max: 41% – 56%
+web-1 · Mean: 47%
+web-2 · Min–Max: 61% – 76%
+web-2 · Mean: 67%</title></rect><rect class="plotto-hover" fill="#000000" fill-opacity="0" height="292" pointer-events="all" width="27.83" x="348.17" y="40"><title>2023-11-14 23:08:20
+web-1 · Min–Max: 43% – 58%
+web-1 · Mean: 49%
+web-2 · Min–Max: 63% – 78%
+web-2 · Mean: 69%</title></rect><rect class="plotto-hover" fill="#000000" fill-opacity="0" height="292" pointer-events="all" width="27.83" x="376.00" y="40"><title>2023-11-14 23:13:20
+web-1 · Min–Max: 44% – 59%
+web-1 · Mean: 50%
+web-2 · Min–Max: 64% – 79%
+web-2 · Mean: 70%</title></rect><rect class="plotto-hover" fill="#000000" fill-opacity="0" height="292" pointer-events="all" width="27.83" x="403.83" y="40"><title>2023-11-14 23:18:20
+web-1 · Min–Max: 40% – 55%
+web-1 · Mean: 46%
+web-2 · Min–Max: 60% – 75%
+web-2 · Mean: 66%</title></rect><rect class="plotto-hover" fill="#000000" fill-opacity="0" height="292" pointer-events="all" width="27.83" x="431.65" y="40"><title>2023-11-14 23:23:20
+web-1 · Min–Max: 41% – 56%
+web-1 · Mean: 47%
+web-2 · Min–Max: 61% – 76%
+web-2 · Mean: 67%</title></rect><rect class="plotto-hover" fill="#000000" fill-opacity="0" height="292" pointer-events="all" width="27.83" x="459.48" y="40"><title>2023-11-14 23:28:20
+web-1 · Min–Max: 36% – 51%
+web-1 · Mean: 42%
+web-2 · Min–Max: 56% – 71%
+web-2 · Mean: 62%</title></rect><rect class="plotto-hover" fill="#000000" fill-opacity="0" height="292" pointer-events="all" width="27.83" x="487.30" y="40"><title>2023-11-14 23:33:20
+web-1 · Min–Max: 37% – 52%
+web-1 · Mean: 43%
+web-2 · Min–Max: 57% – 72%
+web-2 · Mean: 63%</title></rect><rect class="plotto-hover" fill="#000000" fill-opacity="0" height="292" pointer-events="all" width="27.83" x="515.13" y="40"><title>2023-11-14 23:38:20
+web-1 · Min–Max: 37% – 52%
+web-1 · Mean: 43%
+web-2 · Min–Max: 57% – 72%
+web-2 · Mean: 63%</title></rect><rect class="plotto-hover" fill="#000000" fill-opacity="0" height="292" pointer-events="all" width="27.83" x="542.96" y="40"><title>2023-11-14 23:43:20
+web-1 · Min–Max: 32% – 47%
+web-1 · Mean: 38%
+web-2 · Min–Max: 52% – 67%
+web-2 · Mean: 58%</title></rect><rect class="plotto-hover" fill="#000000" fill-opacity="0" height="292" pointer-events="all" width="27.83" x="570.78" y="40"><title>2023-11-14 23:48:20
+web-1 · Min–Max: 32% – 47%
+web-1 · Mean: 38%
+web-2 · Min–Max: 52% – 67%
+web-2 · Mean: 58%</title></rect><rect class="plotto-hover" fill="#000000" fill-opacity="0" height="292" pointer-events="all" width="27.83" x="598.61" y="40"><title>2023-11-14 23:53:20
+web-1 · Min–Max: 27% – 42%
+web-1 · Mean: 33%
+web-2 · Min–Max: 47% – 62%
+web-2 · Mean: 53%</title></rect><rect class="plotto-hover" fill="#000000" fill-opacity="0" height="292" pointer-events="all" width="27.83" x="626.43" y="40"><title>2023-11-14 23:58:20
+web-1 · Min–Max: 27% – 42%
+web-1 · Mean: 33%
+web-2 · Min–Max: 47% – 62%
+web-2 · Mean: 53%</title></rect><rect class="plotto-hover" fill="#000000" fill-opacity="0" height="292" pointer-events="all" width="27.83" x="654.26" y="40"><title>2023-11-15 00:03:20
+web-1 · Min–Max: 27% – 42%
+web-1 · Mean: 33%
+web-2 · Min–Max: 47% – 62%
+web-2 · Mean: 53%</title></rect><rect class="plotto-hover" fill="#000000" fill-opacity="0" height="292" pointer-events="all" width="13.91" x="682.09" y="40"><title>2023-11-15 00:08:20
+web-1 · Min–Max: 22% – 37%
+web-1 · Mean: 28%
+web-2 · Min–Max: 42% – 57%
+web-2 · Mean: 48%</title></rect></svg>

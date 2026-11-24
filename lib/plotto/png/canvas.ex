@@ -34,6 +34,16 @@ defmodule Plotto.PNG.Canvas do
 
   def put_pixel(canvas, _x, _y, _color), do: canvas
 
+  defp put_blended(canvas, x, y, color, opacity) when opacity >= 1.0,
+    do: put_pixel(canvas, x, y, color)
+
+  defp put_blended(%__MODULE__{width: width, height: height} = canvas, x, y, color, opacity)
+       when x >= 0 and x < width and y >= 0 and y < height do
+    put_pixel(canvas, x, y, blend(get_pixel(canvas, x, y), color, opacity))
+  end
+
+  defp put_blended(canvas, _x, _y, _color, _opacity), do: canvas
+
   def fill_rect(canvas, x, y, w, h, color) do
     x0 = round(x)
     y0 = round(y)
@@ -66,9 +76,21 @@ defmodule Plotto.PNG.Canvas do
     end)
   end
 
-  def fill_polygon(canvas, points, _color) when length(points) < 3, do: canvas
+  # `src` over `dst` with the given opacity (0.0 to 1.0); the result is opaque, as the canvas starts white.
+  def blend(_dst, src, opacity) when opacity >= 1.0, do: src
 
-  def fill_polygon(canvas, points, color) do
+  def blend(dst, src, opacity) do
+    {dr, dg, db, _} = unpack(dst)
+    {sr, sg, sb, _} = unpack(src)
+    mix = fn d, s -> round(s * opacity + d * (1 - opacity)) end
+    pack(mix.(dr, sr), mix.(dg, sg), mix.(db, sb), 255)
+  end
+
+  def fill_polygon(canvas, points, color, opacity \\ 1.0)
+
+  def fill_polygon(canvas, points, _color, _opacity) when length(points) < 3, do: canvas
+
+  def fill_polygon(canvas, points, color, opacity) do
     edges =
       points
       |> Enum.zip(tl(points) ++ [hd(points)])
@@ -100,7 +122,7 @@ defmodule Plotto.PNG.Canvas do
         px1 = floor(x_end - 0.5)
 
         if px0 <= px1 do
-          Enum.reduce(px0..px1, row_canvas, fn px, c -> put_pixel(c, px, py, color) end)
+          Enum.reduce(px0..px1, row_canvas, fn px, c -> put_blended(c, px, py, color, opacity) end)
         else
           row_canvas
         end

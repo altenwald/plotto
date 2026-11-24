@@ -167,4 +167,28 @@ defmodule Plotto.PNG.RasterizerTest do
       assert painted?
     end
   end
+
+  test "a <polygon> is filled with its color and opacity" do
+    polygon =
+      Element.new("polygon", %{
+        points: "1,1 3,1 3,3 1,3",
+        fill: "#000000",
+        "fill-opacity": "0.50",
+        stroke: "none"
+      })
+
+    canvas = Rasterizer.rasterize(Element.new("svg", %{}, [polygon]), 10, 10)
+
+    assert Canvas.unpack(Canvas.get_pixel(canvas, 5, 5)) == {128, 128, 128, 255}
+    assert Canvas.get_pixel(canvas, 0, 0) == Canvas.pack(255, 255, 255, 255)
+  end
+
+  test "a fully transparent <rect> (a hover strip) draws nothing" do
+    rect =
+      Element.new("rect", %{x: 1, y: 1, width: 2, height: 2, fill: "#000000", "fill-opacity": "0"})
+
+    canvas = Rasterizer.rasterize(Element.new("svg", %{}, [rect]), 10, 10)
+
+    assert Canvas.get_pixel(canvas, 5, 5) == Canvas.pack(255, 255, 255, 255)
+  end
 end

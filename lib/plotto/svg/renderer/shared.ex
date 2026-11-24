@@ -18,22 +18,35 @@ defmodule Plotto.SVG.Renderer.Shared do
         "plotto-chart"
       end
 
-    Element.new(
-      "svg",
-      %{
-        "xmlns" => "http://www.w3.org/2000/svg",
-        "viewBox" => "0 0 #{width} #{height}",
-        "width" => width,
-        "height" => height,
-        "class" => class
-      },
-      children
-    )
+    attrs = %{
+      "xmlns" => "http://www.w3.org/2000/svg",
+      "viewBox" => "0 0 #{width} #{height}",
+      "class" => class
+    }
+
+    # A responsive chart has no fixed size: it takes the width of its container and keeps the proportions.
+    attrs =
+      if get_opt(opts, :responsive) == true do
+        Map.put(attrs, "style", "width:100%;height:auto")
+      else
+        Map.merge(attrs, %{"width" => width, "height" => height})
+      end
+
+    Element.new("svg", attrs, children)
   end
 
   def format_val(v, opts \\ %{})
 
-  def format_val(v, opts) when is_float(v) do
+  def format_val(v, opts) when is_number(v) do
+    case get_opt(opts, :y_format) do
+      fun when is_function(fun, 1) -> to_string(fun.(v))
+      _ -> format_plain_val(v, opts)
+    end
+  end
+
+  def format_val(v, opts), do: decorate_val(to_string(v), opts)
+
+  defp format_plain_val(v, opts) when is_float(v) do
     base =
       if v == Float.round(v, 0) do
         to_string(trunc(v))
@@ -44,7 +57,7 @@ defmodule Plotto.SVG.Renderer.Shared do
     decorate_val(base, opts)
   end
 
-  def format_val(v, opts), do: decorate_val(to_string(v), opts)
+  defp format_plain_val(v, opts), do: decorate_val(to_string(v), opts)
 
   def decorate_val(base, opts) do
     prefix = get_opt(opts, :value_prefix) || ""
@@ -297,11 +310,20 @@ defmodule Plotto.SVG.Renderer.Shared do
 
   def format_tick(tick, opts \\ %{})
 
-  def format_tick(tick, opts) when is_integer(tick) do
+  def format_tick(tick, opts) when is_number(tick) do
+    case get_opt(opts, :y_format) do
+      fun when is_function(fun, 1) -> to_string(fun.(tick))
+      _ -> format_plain_tick(tick, opts)
+    end
+  end
+
+  def format_tick(tick, opts), do: decorate_val(to_string(tick), opts)
+
+  defp format_plain_tick(tick, opts) when is_integer(tick) do
     decorate_val(Integer.to_string(tick), opts)
   end
 
-  def format_tick(tick, opts) when is_float(tick) do
+  defp format_plain_tick(tick, opts) when is_float(tick) do
     rounded = Float.round(tick, 6)
 
     base =
@@ -313,8 +335,6 @@ defmodule Plotto.SVG.Renderer.Shared do
 
     decorate_val(base, opts)
   end
-
-  def format_tick(tick, opts), do: decorate_val(to_string(tick), opts)
 
   def guide_elements(opts, margin, plot_width, plot_height, min_value, max_value) do
     max_guide =

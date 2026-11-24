@@ -8,6 +8,31 @@ defmodule Plotto.LineChart do
   or the `:line_styles` chart option), each series can have its own color, and series
   can span subsets of the shared category axis.
 
+  ## Time series
+
+  Points can be placed by a numeric `:x` instead of a category `:label`; then they sit in
+  proportion to `x`, so an irregular series shows its gaps. With `x_scale: :time` the `x`
+  values are seconds since the Unix epoch and the axis marks round instants in UTC (or whatever
+  `:x_format` writes). A series with `type: :range` and points `%{x, min, max}` draws a
+  translucent band between the two (a min-max envelope under a mean line, for example):
+
+      series = [
+        %{name: "CPU min-max", type: :range, color: "#4E79A7",
+          data: [%{x: 1_700_000_000, min: 20, max: 45}, %{x: 1_700_000_300, min: 22, max: 52}]},
+        %{name: "CPU mean", color: "#4E79A7",
+          data: [%{x: 1_700_000_000, value: 30}, %{x: 1_700_000_300, value: 36}]}
+      ]
+
+      Plotto.LineChart.new!(series,
+        x_scale: :time, hover: :column, points: false, responsive: true, theme: :css,
+        y_format: &"\#{round(&1)}%"
+      )
+
+  `hover: :column` adds an invisible strip per instant whose native tooltip lists every series
+  there; `theme: :css` writes the colors of text, axes and grid as `var(--plotto-text, #333333)`,
+  `--plotto-axis` and `--plotto-grid`, so the page decides them (and a dark theme needs no new
+  drawing); `responsive: true` leaves out the fixed width and height. The PNG ignores `:theme`.
+
   ## Example
 
       data = [
@@ -45,16 +70,29 @@ defmodule Plotto.LineChart do
   the corresponding SVG/PNG element for that point (a small circle marker), without
   Plotto depending on Phoenix or LiveView in any way.
   """
-  @type data_item :: %{
-          required(:label) => String.t(),
-          required(:value) => number(),
-          optional(:attrs) => %{optional(String.t()) => String.t()}
-        }
+  @type data_item ::
+          %{
+            required(:label) => String.t(),
+            required(:value) => number(),
+            optional(:attrs) => %{optional(String.t()) => String.t()}
+          }
+          | %{
+              required(:x) => number(),
+              required(:value) => number(),
+              optional(:attrs) => %{optional(String.t()) => String.t()}
+            }
+          | %{
+              required(:label | :x) => String.t() | number(),
+              required(:min) => number(),
+              required(:max) => number()
+            }
 
   @typedoc """
   One data series: `:name` (required when there are 2+ series — see `new/2`) and its
   list of `t:data_item/0` points. Series can also specify `:dashed` (`true`/`false`),
   `:style` (`:solid`/`:dashed`), `:stroke_dasharray` (e.g. `"6,4"`), or `:color` (hex string).
+  `type: :range` makes a band between the `:min` and `:max` of each point (`:opacity`, `0.2` by
+  default, sets how translucent), instead of a line.
   """
   @type series :: %{
           required(:name) => String.t() | nil,
@@ -65,7 +103,9 @@ defmodule Plotto.LineChart do
           optional(:stroke_dasharray) => String.t(),
           optional(:stroke_width) => number(),
           optional(:line_width) => number(),
-          optional(:color) => String.t()
+          optional(:color) => String.t(),
+          optional(:type) => :line | :range,
+          optional(:opacity) => number()
         }
 
   @typedoc """
@@ -109,7 +149,14 @@ defmodule Plotto.LineChart do
           value_prefix: String.t() | nil,
           value_suffix: String.t() | nil,
           x_guidelines: false | {:solid | :dashed | :dotted, String.t()},
-          y_guidelines: false | {:solid | :dashed | :dotted, String.t()}
+          y_guidelines: false | {:solid | :dashed | :dotted, String.t()},
+          x_scale: :linear | :time,
+          x_format: (number() -> String.t()) | nil,
+          y_format: (number() -> String.t()) | nil,
+          hover: false | :column,
+          points: boolean(),
+          responsive: boolean(),
+          theme: :default | :css
         }
 
   @typedoc """
@@ -163,6 +210,18 @@ defmodule Plotto.LineChart do
       or `{:solid | :dashed | :dotted, color}`. Defaults to `false`.
     * `:y_guidelines` - optional horizontal guidelines drawn at each Y-axis tick: `false`, `true`,
       or `{:solid | :dashed | :dotted, color}`. Defaults to `false`.
+    * `:x_scale` - for points placed by `:x`: `:linear` (round numbers) or `:time` (`:x` in seconds since
+      the Unix epoch; round instants in UTC). Defaults to `:linear`.
+    * `:x_format` - optional 1-arity function that writes an `:x` for the axis and the titles.
+    * `:y_format` - optional 1-arity function that writes a value for the axis, labels and titles
+      (instead of `:value_prefix`/`:value_suffix`).
+    * `:hover` - `:column` adds an invisible strip per position of the x axis whose native tooltip
+      lists every series there. Defaults to `false`.
+    * `:points` - `false` leaves out the circle of each point (the line stays). Defaults to `true`.
+    * `:responsive` - `true` leaves out the fixed width and height of the SVG, which keeps only its
+      `viewBox` and takes the width of its container. Defaults to `false`.
+    * `:theme` - `:css` writes the colors of text, axes and grid as CSS variables with the default as
+      fallback. Defaults to `:default`.
 
   ## Examples
 

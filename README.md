@@ -161,6 +161,10 @@ File.write!(Path.join(__DIR__, "line_chart.png"), png)
 
 ![Line chart example](examples/line_chart.png)
 
+[examples/time_series_chart.exs](examples/time_series_chart.exs) generates a time series (`mix run examples/time_series_chart.exs`): the points are placed by `x` (seconds since the Unix epoch, written in UTC with `x_scale: :time`), a `type: :range` series draws the translucent min-max band under each mean line, `y_format` writes the values, `hover: :column` adds one native tooltip per instant listing every series, and `points: false` leaves out the circles. `responsive: true` makes the SVG take the width of its container and `theme: :css` writes the colors of text, axes and grid as `var(--plotto-text, #333333)`, `--plotto-axis` and `--plotto-grid`, so the page can switch to a dark theme without drawing the chart again.
+
+![Time series example](examples/time_series_chart.png)
+
 [examples/candlestick_chart.exs](examples/candlestick_chart.exs) generates a candlestick (OHLC) financial chart (`mix run examples/candlestick_chart.exs`):
 
 ```elixir
@@ -491,7 +495,7 @@ The package can be installed by adding `plotto` to your list of dependencies in 
 ```elixir
 def deps do
   [
-    {:plotto, "~> 0.7.0"}
+    {:plotto, "~> 0.8.0"}
   ]
 end
 ```
