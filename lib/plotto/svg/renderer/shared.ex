@@ -876,7 +876,7 @@ defmodule Plotto.SVG.Renderer.Shared do
     {short, long} = Enum.split_with(widths, &(&1 <= avg))
 
     if short == [] or long == [] do
-      List.duplicate(avg, n)
+      Enum.map(widths, fn _ -> avg end)
     else
       used_by_short = Enum.sum(short)
       remaining_budget = max(0.0, total_budget - used_by_short)

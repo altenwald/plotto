@@ -160,7 +160,12 @@ defmodule Plotto.PNG.Rasterizer do
     end
   end
 
-  defp num(str), do: elem(Float.parse(str), 0)
+  defp num(str) do
+    case Float.parse(str) do
+      {val, _} -> val
+      :error -> 0.0
+    end
+  end
 
   defp parse_dasharray(nil), do: nil
   defp parse_dasharray(""), do: nil
