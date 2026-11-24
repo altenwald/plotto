@@ -15,6 +15,8 @@ It is very useful when you are developing a website and need to integrate SVG ch
 
 If you need to export or generate PNG charts for email, PDF, or sending via Telegram, Slack, Mattermost, etc., `Plotto.to_png/1` renders the same chart to a PNG binary, anti-aliased and with full Unicode text support (including accented characters like á, é, ñ) via a bundled DejaVu Sans font.
 
+Plotto also draws time series: `Plotto.LineChart` places points by a numeric (or time) `x`, draws translucent min-max bands, writes values with your own formatter, adds one tooltip per instant listing every series, and can produce a responsive SVG whose colors come from CSS variables, so the page decides light or dark without drawing the chart again (see [Time series](#time-series-x-axis-bands-and-responsive-svg)).
+
 Charts can also show an optional title and a legend (one swatch + name row per series, rendering square swatches for bars/candles and line segments with solid/dashed/dotted styles for lines). The legend can be positioned in 12 directional positions (top, bottom, left, right — with left, center/middle, and right alignments) and can be oriented vertically (default) or horizontally (`legend_orientation: :horizontal`) when positioned at the top or bottom. Negative values and mixed positive/negative domains are fully supported with an automatic zero baseline.
 
 ## Usage
@@ -43,6 +45,26 @@ line_chart =
 ```
 
 `Plotto.LineChart` supports both flat data lists (`[%{label: "Jan", value: 10}, ...]`) for single series and multi-series lists. See `Plotto.BarChart` and `Plotto.LineChart` for the full data/options shape.
+
+```elixir
+# Time series: points placed by x (seconds since the Unix epoch), a min-max band under the mean
+series = [
+  %{name: "CPU min-max", type: :range, color: "#4E79A7",
+    data: [%{x: 1_700_000_000, min: 20, max: 45}, %{x: 1_700_000_300, min: 22, max: 52}]},
+  %{name: "CPU mean", color: "#4E79A7",
+    data: [%{x: 1_700_000_000, value: 30}, %{x: 1_700_000_300, value: 36}]}
+]
+
+time_chart =
+  Plotto.LineChart.new!(series,
+    x_scale: :time,
+    y_format: &"#{round(&1)}%",
+    hover: :column,
+    points: false,
+    responsive: true,
+    theme: :css
+  )
+```
 
 ## Examples
 
@@ -428,7 +450,7 @@ File.write!(Path.join(__DIR__, "donut_chart.png"), png)
 
 ## Tooltips, Labels and CSS Styling
 
-Plotto charts generate clean SVG elements with standard semantic CSS classes (`plotto-chart`, `plotto-inline`, `plotto-bar`, `plotto-candle`, `plotto-candle-bullish`, `plotto-candle-bearish`, `plotto-point`, `plotto-line`, `plotto-gauge-arc`, `plotto-gauge-fill`, `plotto-gauge-track`, `plotto-pie-slice`, `plotto-axis`, `plotto-label`, `plotto-label-bar`, `plotto-label-point`, `plotto-label-pie`, `plotto-gauge-value`, `plotto-gauge-label`, `plotto-gauge-minmax`, `plotto-legend`), making it easy to style them with Tailwind, CSS variables, or dark mode themes.
+Plotto charts generate clean SVG elements with standard semantic CSS classes (`plotto-chart`, `plotto-inline`, `plotto-bar`, `plotto-candle`, `plotto-candle-bullish`, `plotto-candle-bearish`, `plotto-point`, `plotto-line`, `plotto-range`, `plotto-hover`, `plotto-gauge-arc`, `plotto-gauge-fill`, `plotto-gauge-track`, `plotto-pie-slice`, `plotto-axis`, `plotto-label`, `plotto-label-bar`, `plotto-label-point`, `plotto-label-pie`, `plotto-gauge-value`, `plotto-gauge-label`, `plotto-gauge-minmax`, `plotto-legend`), making it easy to style them with Tailwind, CSS variables, or dark mode themes.
 
 ### Inline Charts (`inline: true`)
 
@@ -487,6 +509,39 @@ Charts support adding prefixes and suffixes to numeric values across Y-axis tick
 Charts support drawing horizontal and vertical guidelines (grid lines) behind data points and series:
 - `:y_guidelines`: horizontal guidelines drawn across the plot at each Y-axis tick mark. Can be `false` (default), `true` (dotted with theme grid color), a color string (`"#E0E0E0"`), or a tuple `{:dotted | :dashed | :solid, color}` (e.g. `{:dashed, "#CCCCCC"}`).
 - `:x_guidelines`: vertical guidelines drawn across the plot at each category along the X axis. Follows the same format as `:y_guidelines`. Defaults to `false`.
+
+### Time Series (x axis, bands and responsive SVG)
+
+`Plotto.LineChart` can place its points by a numeric `:x` instead of a category `:label` (all the points of a chart use one or the other):
+- `%{x: 1_700_000_000, value: 30}`: the point sits in proportion to `x`, so an irregular series shows its gaps instead of spacing the points evenly.
+- `:x_scale`: `:linear` (default, round numbers) or `:time`. With `:time`, `x` is **seconds since the Unix epoch** and the axis marks round instants **in UTC**: the step grows with the span (1s, 5s, 15s, 30s, 1m, 5m, 15m, 30m, 1h, 3h, 6h, 12h, 1d, 2d, 7d, 30d, 90d, 1y, 5y), never more than six marks, written `HH:MM`, or `MM-DD` from a day on.
+- `:x_format`: a 1-arity function that writes an `x` for the axis marks and the titles. Use it for another time zone (shift `x` by the offset before formatting) or for any other unit.
+
+Series with `type: :range` draw a **band** between the `:min` and `:max` of each point (`%{x: ..., min: 20, max: 45}`), for example a min-max envelope under a mean line. The band is translucent (`opacity: 0.2` by default, per series), is drawn under the lines, gets a square in the legend and takes part in the Y axis bounds. Bands also work on category axes and in `inline: true` charts.
+
+### Formatting Values (`y_format`)
+
+`:y_format` is a 1-arity function that writes a value on the Y axis, in point and value labels and in the tooltips, and takes the place of `:value_prefix`/`:value_suffix` when given: `y_format: &"#{round(&1)}%"`, or a formatter of bytes or durations.
+
+### Hover Columns (`hover: :column`)
+
+With `hover: :column` the plot gets one invisible strip per position of the x axis (`class="plotto-hover"`) whose native tooltip lists the position and every series there (`name: value`, or `min – max` for a band). It is a shared tooltip with no JavaScript: hovering anywhere in the column reads all the series together. It also works in `inline: true` charts, and the PNG leaves the strips out. Defaults to `false`.
+
+### Points (`points: false`)
+
+By default each point of a line is a small circle (the target of `phx-click`, `data-*` and tooltips). `points: false` leaves them out and keeps the lines, which is what you want for long series where the circles are noise.
+
+### Responsive SVG and CSS Theme
+
+- `responsive: true` leaves out the fixed `width` and `height` of the root `<svg>` and writes `style="width:100%;height:auto"`: it takes the width of its container and keeps the proportions of its `viewBox`. `:width` and `:height` then set those proportions (and so the size of the text relative to the chart). Defaults to `false`.
+- `theme: :css` writes the colors of text, axes and grid as CSS variables with the default as fallback (`fill: var(--plotto-text, #333333)`, `stroke: var(--plotto-axis, #CCCCCC)` and `stroke: var(--plotto-grid, #E0E0E0)`), in the `style` attribute so they win over the `fill`/`stroke` attributes. Define the variables where the chart lives and the theme can change without drawing the chart again:
+
+```css
+:root { --plotto-text: #475569; --plotto-axis: #cbd5e1; --plotto-grid: #e2e8f0 }
+:root[data-theme="dark"] { --plotto-text: #cbd5e1; --plotto-axis: #475569; --plotto-grid: #334155 }
+```
+
+  The series colors (`:colors` or `:color`) are not touched. PNG output ignores `:theme` and always draws the default colors. Defaults to `:default`.
 
 ## Installation
 
